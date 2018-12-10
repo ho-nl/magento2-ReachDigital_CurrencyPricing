@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<!--
+  ~ Copyright © Reach Digital (https://www.reachdigital.io/)
+  ~ See LICENSE.txt for license details.
+  -->
+
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <virtualType name="Magento\Catalog\Ui\DataProvider\Product\Form\Modifier\Pool">
+        <arguments>
+            <argument name="modifiers" xsi:type="array">
+                <item name="currency-pricing" xsi:type="array">
+                    <item name="class" xsi:type="string">ReachDigital\CurrencyPricing\Ui\DataProvider\Product\Form\Modifier\AdvancedPricingCurrency</item>
+                    <item name="sortOrder" xsi:type="number">95</item>
+                </item>
+            </argument>
+        </arguments>
+    </virtualType>
+
+    <type name="Magento\Catalog\Model\Product">
+        <plugin name="SaveCurrency" type="ReachDigital\CurrencyPricing\Plugin\MagentoCatalogModel\SaveCurrency"/>
+    </type>
+</config>
