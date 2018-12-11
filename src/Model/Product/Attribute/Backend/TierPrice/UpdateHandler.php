@@ -1,6 +1,6 @@
 <?php
 
-namespace ReachDigital\CurrencyPricing\Model\Product\Attribute\Backend\TierpriceWithCurrency;
+namespace ReachDigital\CurrencyPricing\Model\Product\Attribute\Backend\TierPrice;
 
 use Magento\Framework\EntityManager\Operation\ExtensionInterface;
 use Magento\Catalog\Api\Data\ProductInterface;
@@ -81,14 +81,19 @@ class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\Tie
                     __('Tier prices data should be array, but actually other type is received')
                 );
             }
-            $websiteId = $this->storeManager->getStore($entity->getStoreId())->getWebsiteId();
+            $websiteId = (int)$this->storeManager->getStore($entity->getStoreId())->getWebsiteId();
             $isGlobal = $attribute->isScopeGlobal() || $websiteId === 0;
             $identifierField = $this->metadataPoll->getMetadata(ProductInterface::class)->getLinkField();
-            $productId = $entity->getData($identifierField);
+            $productId = (int)$entity->getData($identifierField);
 
             // prepare original data to compare
-            $origPrices = $entity->getOrigData($attribute->getName());
-            $old = $this->prepareOriginalDataToCompare($origPrices, $isGlobal);
+            $origPrices = [];
+            $originalId = $entity->getOrigData($identifierField);
+            if (empty($originalId) || $entity->getData($identifierField) == $originalId) {
+                $origPrices = $entity->getOrigData($attribute->getName());
+            }
+
+            $old = $this->prepareOldTierPriceToCompare($origPrices);
             // prepare data for save
             $new = $this->prepareNewDataForSave($priceRows, $isGlobal);
 
@@ -128,7 +133,7 @@ class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\Tie
      * Check whether price has percentage value.
      *
      * @param array $priceRow
-     * @return integer|null
+     * @return int|null
      */
     private function getPercentage(array $priceRow)
     {
@@ -265,19 +270,18 @@ class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\Tie
     }
 
     /**
+     * Prepare old data to compare.
+     *
      * @param array|null $origPrices
-     * @param bool $isGlobal
      * @return array
      */
-    private function prepareOriginalDataToCompare($origPrices, $isGlobal = true): array
+    private function prepareOldTierPriceToCompare($origPrices): array
     {
         $old = [];
         if (is_array($origPrices)) {
             foreach ($origPrices as $data) {
-                if ($isGlobal === $this->isWebsiteGlobal((int)$data['website_id'])) {
-                    $key = $this->getPriceKey($data);
-                    $old[$key] = $data;
-                }
+                $key = $this->getPriceKey($data);
+                $old[$key] = $data;
             }
         }
 
@@ -314,7 +318,7 @@ class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\Tie
     protected function getAdditionalFieldNames() :array {
         return ['currency'];
     }
-    
+
     /**
      * @return array
      */
@@ -351,7 +355,9 @@ class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\Tie
     private function copyFields($data, $fieldNames) :array {
         $result = [];
         foreach ($fieldNames as $fieldName) {
-            $result[$fieldName] = $data[$fieldName];
+            if (isset($data[$fieldName])) {
+                $result[$fieldName] = $data[$fieldName];
+            }
         }
         return $result;
     }

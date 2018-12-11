@@ -3,7 +3,7 @@
  * Copyright © Reach Digital (https://www.reachdigital.io/)
  * See LICENSE.txt for license details.
  */
-namespace ReachDigital\CurrencyPricing\Model\Product\Attribute\Backend\TierpriceWithCurrency;
+namespace ReachDigital\CurrencyPricing\Model\Product\Attribute\Backend\TierPrice;
 
 use Magento\Framework\EntityManager\Operation\ExtensionInterface;
 use Magento\Catalog\Api\Data\ProductInterface;
@@ -134,7 +134,7 @@ class SaveHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\TierP
      * Check whether price has percentage value.
      *
      * @param array $priceRow
-     * @return integer|null
+     * @return int|null
      */
     private function getPercentage(array $priceRow)
     {
@@ -175,7 +175,7 @@ class SaveHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\TierP
     protected function getAdditionalFieldNames() :array {
         return ['currency'];
     }
-    
+
     /**
      * Returns a list of values from the $data array where they are part of this tierPrice.
      * @param $data
@@ -195,7 +195,9 @@ class SaveHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\TierP
     private function copyFields($data, $fieldNames) :array {
         $result = [];
         foreach ($fieldNames as $fieldName) {
-            $result[$fieldName] = $data[$fieldName];
+            if (isset($data[$fieldName])) {
+                $result[$fieldName] = $data[$fieldName];
+            }
         }
         return $result;
     }
