@@ -149,14 +149,17 @@ class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\Tie
         $isChanged = false;
         foreach ($valuesToUpdate as $key => $value) {
             if ((!empty($value['value']) && (float)$oldValues[$key]['price'] !== (float)$value['value'])
+                || $this->_valuesUpdated($valuesToUpdate, $oldValues)
                 || $this->getPercentage($oldValues[$key]) !== $this->getPercentage($value)
             ) {
                 $price = new \Magento\Framework\DataObject(
-                    [
-                        'value_id' => $oldValues[$key]['price_id'],
-                        'value' => $value['value'],
-                        'percentage_value' => $this->getPercentage($value)
-                    ]
+                    array_merge(
+                        $this->_getAdditionalFields($valuesToUpdate),
+                        [
+                            'value_id' => $oldValues[$key]['price_id'],
+                            'value' => $value['value'],
+                            'percentage_value' => $this->getPercentage($value)
+                        ])
                 );
                 $this->tierPriceResource->savePriceData($price);
                 $isChanged = true;
@@ -218,7 +221,7 @@ class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\Tie
     {
         $key = implode(
             '-',
-            array_merge([$priceData['website_id'], $priceData['cust_group']], [(int)$priceData['price_qty']])
+            array_merge($this->_getAdditionalUniqueFields($priceData), [$priceData['website_id'], $priceData['cust_group'], (int)$priceData['price_qty']])
         );
 
         return $key;
@@ -237,13 +240,13 @@ class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\Tie
         $customerGroupId = $useForAllGroups ? 0 : $data['cust_group'];
         $tierPrice = array_merge(
             $this->getAdditionalFields($data),
-            [
+            $this->_addValues($data, [
                 'website_id' => $data['website_id'],
                 'all_groups' => (int)$useForAllGroups,
                 'customer_group_id' => $customerGroupId,
                 'value' => $data['price'] ?? null,
                 'qty' => (int)$data['price_qty']
-            ]
+            ])
         );
 
         return $tierPrice;
@@ -302,5 +305,69 @@ class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\Tie
         }
 
         return $new;
+    }
+
+    /**
+     * @return array
+     */
+    protected function getAdditionalFieldNames() :array {
+        return ['currency'];
+    }
+    /**
+     * @return array
+     */
+    protected function getAdditionalUniqueFieldNames() :array {
+        return ['currency'];
+    }
+
+    /**
+     * Returns a list of values from the $data array where they are part of this tierPrice.
+     * @param $data
+     *
+     * @return array
+     */
+    protected function _getAdditionalFields($data) :array {
+        return $this->copyFields($data, $this->getAdditionalFieldNames());
+    }
+
+    /**
+     * Returns a list of values from the $data array when they are part of the unique key for this tierPrice.
+     * @param $data
+     *
+     * @return array
+     */
+    protected function _getAdditionalUniqueFields($data) :array {
+        return $this->copyFields($data, $this->getAdditionalUniqueFieldNames());
+    }
+
+    /**
+     * @param $data
+     * @param $fieldNames
+     *
+     * @return array
+     */
+    private function copyFields($data, $fieldNames) :array {
+        $result = [];
+        foreach ($fieldNames as $fieldName) {
+            $result[$fieldName] = $data[$fieldName];
+        }
+        return $result;
+    }
+
+    /**
+     * Checks whether any values have been updated.
+     * @param $valuesToUpdate
+     * @param $oldValues
+     *
+     * @return bool
+     */
+    protected function _valuesUpdated($valuesToUpdate, $oldValues): bool
+    {
+        foreach ($this->getAdditionalFieldNames() as $fieldName) {
+            if (($valuesToUpdate[$fieldName] ?? null) !== ($oldValues[$fieldName] ?? null)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
