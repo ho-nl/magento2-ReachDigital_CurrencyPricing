@@ -156,6 +156,7 @@ class SaveHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\TierP
         $customerGroupId = $useForAllGroups ? 0 : $data['cust_group'];
         $tierPrice = array_merge(
             $this->getAdditionalFields($data),
+            $this->_getAdditionalFields($data),
             [
                 'website_id' => $data['website_id'],
                 'all_groups' => (int)$useForAllGroups,
@@ -166,5 +167,36 @@ class SaveHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\TierP
         );
 
         return $tierPrice;
+    }
+
+    /**
+     * @return array
+     */
+    protected function getAdditionalFieldNames() :array {
+        return ['currency'];
+    }
+    
+    /**
+     * Returns a list of values from the $data array where they are part of this tierPrice.
+     * @param $data
+     *
+     * @return array
+     */
+    protected function _getAdditionalFields($data) :array {
+        return $this->copyFields($data, $this->getAdditionalFieldNames());
+    }
+
+    /**
+     * @param $data
+     * @param $fieldNames
+     *
+     * @return array
+     */
+    private function copyFields($data, $fieldNames) :array {
+        $result = [];
+        foreach ($fieldNames as $fieldName) {
+            $result[$fieldName] = $data[$fieldName];
+        }
+        return $result;
     }
 }
