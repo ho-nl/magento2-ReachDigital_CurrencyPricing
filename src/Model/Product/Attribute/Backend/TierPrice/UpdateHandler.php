@@ -240,13 +240,14 @@ class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\Tie
         $customerGroupId = $useForAllGroups ? 0 : $data['cust_group'];
         $tierPrice = array_merge(
             $this->getAdditionalFields($data),
-            $this->_addValues($data, [
+            $this->_getAdditionalFields($data),
+            [
                 'website_id' => $data['website_id'],
                 'all_groups' => (int)$useForAllGroups,
                 'customer_group_id' => $customerGroupId,
                 'value' => $data['price'] ?? null,
                 'qty' => (int)$data['price_qty']
-            ])
+            ]
         );
 
         return $tierPrice;
@@ -313,6 +314,7 @@ class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\Tie
     protected function getAdditionalFieldNames() :array {
         return ['currency'];
     }
+    
     /**
      * @return array
      */
