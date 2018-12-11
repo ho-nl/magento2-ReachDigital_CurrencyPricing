@@ -16,7 +16,8 @@
         </arguments>
     </virtualType>
 
-    <type name="Magento\Catalog\Model\Product">
-        <plugin name="SaveCurrency" type="ReachDigital\CurrencyPricing\Plugin\MagentoCatalogModel\SaveCurrency"/>
-    </type>
+    <preference for="Magento\Catalog\Model\Product\Attribute\Backend\Tierprice" type="ReachDigital\CurrencyPricing\Model\Product\Attribute\Backend\TierpriceWithCurrency"/>
+    <preference for="Magento\Catalog\Model\ResourceModel\Product\Attribute\Backend\Tierprice" type="ReachDigital\CurrencyPricing\Model\ResourceModel\Product\Attribute\Backend\TierpriceWithCurrency"/>
+    <preference for="Magento\Catalog\Model\Product\Attribute\Backend\TierPrice\UpdateHandler" type="ReachDigital\CurrencyPricing\Model\Product\Attribute\Backend\TierPrice\UpdateHandler"/>
+    <preference for="Magento\Catalog\Model\Product\Attribute\Backend\TierPrice\SaveHandler" type="ReachDigital\CurrencyPricing\Model\Product\Attribute\Backend\TierPrice\SaveHandler"/>
 </config>
