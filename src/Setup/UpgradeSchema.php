@@ -47,6 +47,15 @@ class UpgradeSchema implements UpgradeSchemaInterface
                 \Magento\Framework\DB\Adapter\AdapterInterface::INDEX_TYPE_UNIQUE
             );
         }
+        if (version_compare($context->getVersion(), '0.3', '<')) {
+
+            $setup->getConnection()->addColumn('catalog_product_index_tier_price', 'currency', [
+                'type' => \Magento\Framework\DB\Ddl\Table::TYPE_TEXT,
+                'comment'   => 'Currency for the price',
+                'length' => '3',
+                'nullable' => true
+            ]);
+        }
         $setup->endSetup();
     }
 }
