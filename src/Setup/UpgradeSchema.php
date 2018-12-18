@@ -55,6 +55,14 @@ class UpgradeSchema implements UpgradeSchemaInterface
                 'length' => '3',
                 'nullable' => true
             ]);
+
+            $setup->getConnection()->addIndex(
+                'catalog_product_index_tier_price',
+                \Magento\Framework\DB\Adapter\AdapterInterface::INDEX_TYPE_PRIMARY,
+                ['entity_id','customer_group_id','website_id', 'currency'],
+                \Magento\Framework\DB\Adapter\AdapterInterface::INDEX_TYPE_PRIMARY
+            );
+
         }
         $setup->endSetup();
     }
