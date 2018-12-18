@@ -67,4 +67,14 @@ class RealBaseCurrency
         }
         return $this->store->getConfig(Currency::XML_PATH_CURRENCY_BASE);
     }
+
+    /**
+     * Retrieve current currency rate
+     *
+     * @return float
+     */
+    public function getRealCurrentCurrencyRate() :float
+    {
+        return $this->getRealBaseCurrency()->getRate($this->store->getCurrentCurrency());
+    }
 }
