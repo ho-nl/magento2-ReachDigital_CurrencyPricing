@@ -16,7 +16,9 @@ class TierpriceWithCurrency extends Tierprice
     protected function _getAdditionalUniqueFields($objectArray) :array
     {
         $uniqueFields = parent::_getAdditionalUniqueFields($objectArray);
-        $uniqueFields['currency'] = $objectArray['currency'];
+        if (isset($objectArray['currency'])) {
+            $uniqueFields['currency'] = $objectArray['currency'];
+        }
         return $uniqueFields;
     }
 
