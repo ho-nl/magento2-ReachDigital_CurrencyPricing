@@ -68,11 +68,17 @@ class CurrencyPricingPrice
      * @return float|array
      */
     public function aroundGetBasePrice(Price $subject, \Closure $proceed, Product $product, $qty = null) {
-
+        $currenctCurrencyCode = $this->store->getCurrentCurrencyCode();
         $currencyRate = $this->realBaseCurrency->getRealCurrentCurrencyRate();
         $price = (float) $product->getPrice();
-        $tierPrice = $this->_applyTierPrice($product, $qty, $currencyRate * $price);
-        $specialPrice = $this->_applySpecialPrice($subject, $product, $price) * $currencyRate;
+
+        if ($product->getData('currency_price')[$currenctCurrencyCode] !== '') {
+            $convertedPrice = (float)$product->getData('currency_price')[$currenctCurrencyCode];
+        } else {
+            $convertedPrice = $currencyRate * $price;
+        }
+        $tierPrice = $this->_applyTierPrice($product, $qty, $convertedPrice);
+        $specialPrice = $this->_applySpecialPrice($subject, $product, $convertedPrice, $currencyRate);
         return min(
             $tierPrice,
             $specialPrice
@@ -88,11 +94,11 @@ class CurrencyPricingPrice
      *
      * @return  float
      */
-    protected function _applySpecialPrice(Price $subject, Product $product, float $finalPrice) :float
+    protected function _applySpecialPrice(Price $subject, Product $product, float $finalPrice, float $currencyRate) :float
     {
         return $subject->calculateSpecialPrice(
             $finalPrice,
-            $product->getSpecialPrice(),
+            $product->getSpecialPrice() * $currencyRate,
             $product->getSpecialFromDate(),
             $product->getSpecialToDate(),
             $product->getStore()
