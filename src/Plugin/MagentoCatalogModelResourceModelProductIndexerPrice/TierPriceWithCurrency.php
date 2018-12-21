@@ -200,6 +200,7 @@ class TierPriceWithCurrency
                 'customer_group.customer_group_id',
                 'website.website_id',
                 'tier_price' => $tierPriceValueExpr,
+                'entity.currency'
             ]
         );
 
