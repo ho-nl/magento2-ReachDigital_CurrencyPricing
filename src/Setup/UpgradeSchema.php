@@ -12,10 +12,11 @@ class UpgradeSchema implements UpgradeSchemaInterface
     /**
      * Upgrades data for a module
      *
-     * @param SchemaSetupInterface $setup
-     * @param ModuleContextInterface   $context
+     * @param SchemaSetupInterface   $setup
+     * @param ModuleContextInterface $context
      *
      * @return void
+     * @throws \Zend_Db_Exception
      */
     public function upgrade(SchemaSetupInterface $setup, ModuleContextInterface $context) :void
     {
@@ -63,6 +64,46 @@ class UpgradeSchema implements UpgradeSchemaInterface
                 \Magento\Framework\DB\Adapter\AdapterInterface::INDEX_TYPE_PRIMARY
             );
 
+        }
+        if (version_compare($context->getVersion(), '0.4', '<')) {
+
+            $currencyPriceTable = $setup->getConnection()->newTable($setup->getTable('catalog_product_entity_currency_price'))
+                ->addColumn('currency_price_id',
+                    \Magento\Framework\DB\Ddl\Table::TYPE_INTEGER,
+                    null,
+                    ['identity' => true, 'unsigned' => true, 'nullable' => false, 'primary' => true])
+                ->addColumn('currency',
+                    \Magento\Framework\DB\Ddl\Table::TYPE_TEXT,
+                    3,
+                    ['nullable' => false])
+                ->addColumn('type',
+                    \Magento\Framework\DB\Ddl\Table::TYPE_TEXT,
+                    10,
+                    ['nullable' => false])
+                ->addColumn('price',
+                    \Magento\Framework\DB\Ddl\Table::TYPE_DECIMAL,
+                    3)
+                ->addColumn(
+                    'entity_id',
+                    \Magento\Framework\DB\Ddl\Table::TYPE_INTEGER,
+                    null,
+                    ['unsigned' => true, 'nullable' => false],
+                    'Entity ID'
+                )
+                ->addForeignKey(
+                    $setup->getFkName(
+                        'catalog_product_entity_currency_price',
+                        'entity_id',
+                        'catalog_product_entity',
+                        'entity_id'
+                    ),
+                    'entity_id',
+                    $setup->getTable('catalog_product_entity'),
+                    'entity_id',
+                    \Magento\Framework\DB\Ddl\Table::ACTION_CASCADE
+                );
+
+            $setup->getConnection()->createTable($currencyPriceTable);
         }
         $setup->endSetup();
     }
