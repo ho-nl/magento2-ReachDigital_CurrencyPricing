@@ -5,8 +5,10 @@
  */
 namespace ReachDigital\CurrencyPricing\Ui\DataProvider\Product\Form\Modifier;
 
+use Magento\Catalog\Model\Locator\LocatorInterface;
 use Magento\Catalog\Ui\DataProvider\Product\Form\Modifier\AbstractModifier;
 use Magento\Ui\Component\Form\Element\Select;
+use ReachDigital\CurrencyPricing\Model\ResourceModel\CurrencyPrice;
 
 class AdvancedPricingCurrency extends AbstractModifier
 {
@@ -17,15 +19,31 @@ class AdvancedPricingCurrency extends AbstractModifier
     private $currencyModel;
 
     /**
+     * @var LocatorInterface
+     */
+    private $locator;
+
+    /**
+     * @var CurrencyPrice
+     */
+    private $currencyPriceResourceModel;
+
+    /**
      * AdvancedPricingCurrency constructor.
      *
-     * @param \Magento\Directory\Model\Currency $currencyModel
+     * @param LocatorInterface                                                $locator
+     * @param \Magento\Directory\Model\Currency                               $currencyModel
+     * @param CurrencyPrice $currencyPriceResourceModel
      */
     public function __construct(
-        \Magento\Directory\Model\Currency $currencyModel
+        LocatorInterface $locator,
+        \Magento\Directory\Model\Currency $currencyModel,
+        CurrencyPrice $currencyPriceResourceModel
     )
     {
         $this->currencyModel = $currencyModel;
+        $this->locator = $locator;
+        $this->currencyPriceResourceModel = $currencyPriceResourceModel;
     }
 
     /**
@@ -52,6 +70,42 @@ class AdvancedPricingCurrency extends AbstractModifier
                 ]
             ]
         ];
+
+        $currencies = [];
+
+        foreach ($this->currencyModel->getConfigAllowCurrencies() as $value) {
+            $currencies [$value]= [
+                    'arguments' => [
+                        'data' => [
+                            'config' => [
+                                'componentType' => 'field',
+                                'formElement' => 'input',
+                                'dataType' => 'price',
+                                'label' => $value,
+                                'enableLable' => 'true',
+                                'dataScope' => 'currency_price.' . $value
+                            ]
+                        ]
+                    ]
+                ];
+        }
+
+        $meta['product-details']['children']['container_currency_price'] = [
+            'arguments' => [
+                'data' => [
+                    'config' => [
+                        'componentType' => 'container',
+                        'formElement'=> 'container',
+                        'breakLine' => false,
+                        'label' => __('Currency price'),
+                        'required' => '0',
+                        'sortOrder' => 15
+                    ]
+                ]
+            ],
+            'children' => $currencies
+        ];
+
         return $meta;
     }
 
@@ -63,6 +117,17 @@ class AdvancedPricingCurrency extends AbstractModifier
      */
     public function modifyData(array $data)
     {
+
+        $productId = $this->locator->getProduct()->getId();
+
+        $currencyPriceObjects = $this->currencyPriceResourceModel->loadPriceData($productId, 'price');
+        $currencyPriceData = [];
+        foreach ($currencyPriceObjects as $currencyPriceObject) {
+            $currencyPriceData[$currencyPriceObject['currency']] = $currencyPriceObject['price'] === '0' ? '' : (string)$currencyPriceObject['price'];
+        }
+
+        $data[$productId][self::DATA_SOURCE_DEFAULT]['currency_price'] = $currencyPriceData;
+
         return $data;
     }
 }
