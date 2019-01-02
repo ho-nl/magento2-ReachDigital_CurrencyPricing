@@ -13,4 +13,7 @@
     <type name="Magento\Catalog\Model\Product\Type\Price">
         <plugin name="CurrencyPricingPrice" type="ReachDigital\CurrencyPricing\Plugin\MagentoCatalogModelProductType\CurrencyPricingPrice" sortOrder="1" />
     </type>
+    <type name="Magento\Catalog\Model\ResourceModel\Product">
+        <plugin name="ProductWithCurrencyPrices" type="ReachDigital\CurrencyPricing\Plugin\MagentoCatalogModelResourceModel\ProductWithCurrencyPrices" sortOrder="1" />
+    </type>
 </config>

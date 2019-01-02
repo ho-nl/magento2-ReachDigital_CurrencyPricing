@@ -35,10 +35,10 @@ class CurrencyPricingPrice
     /**
      * CurrencyPricingPrice constructor.
      *
-     * @param GroupManagementInterface $groupManagement
-     * @param Session                  $customerSession
-     * @param Store                    $store
-     * @param RealBaseCurrency         $realBaseCurrency
+     * @param GroupManagementInterface                          $groupManagement
+     * @param Session                                           $customerSession
+     * @param Store                                             $store
+     * @param RealBaseCurrency                                  $realBaseCurrency
      */
     public function __construct(
         GroupManagementInterface $groupManagement,
@@ -51,6 +51,79 @@ class CurrencyPricingPrice
         $this->customerSession = $customerSession;
         $this->store = $store;
         $this->realBaseCurrency = $realBaseCurrency;
+    }
+
+    /**
+     * Plugin for Price::getBasePrice().
+     * Ensures that the returned price is already correct for the current currency of the customer.
+     *
+     * Normally conversion using the rate of the current currency is done later by magento, but this is circumvented by changing the BaseCurrency returned by the store into the CurrentCurrency (See ReplaceBaseCurrencyWithCurrentCurrency plugin).
+     *
+     * @param Price    $subject
+     * @param \Closure $proceed
+     *
+     * @param Product  $product
+     * @param float    $qty
+     *
+     * @return float|array
+     */
+    public function aroundGetBasePrice(Price $subject, \Closure $proceed, Product $product, $qty = null) {
+        $currenctCurrencyCode = $this->store->getCurrentCurrencyCode();
+        $currencyRate = $this->realBaseCurrency->getRealCurrentCurrencyRate();
+        $price = (float) $product->getPrice();
+
+        if ($product->getData('currency_price')[$currenctCurrencyCode] !== '') {
+            $convertedPrice = (float)$product->getData('currency_price')[$currenctCurrencyCode];
+        } else {
+            $convertedPrice = $currencyRate * $price;
+        }
+        $tierPrice = $this->_applyTierPrice($product, $qty, $convertedPrice);
+        $specialPrice = $this->_applySpecialPrice($subject, $product, $convertedPrice, $currencyRate);
+        return min(
+            $tierPrice,
+            $specialPrice
+        );
+    }
+
+    /**
+     * Apply special price for product if not return price that was before
+     *
+     * @param Price     $subject
+     * @param   Product $product
+     * @param   float   $finalPrice
+     *
+     * @return  float
+     */
+    protected function _applySpecialPrice(Price $subject, Product $product, float $finalPrice, float $currencyRate) :float
+    {
+        return $subject->calculateSpecialPrice(
+            $finalPrice,
+            $product->getSpecialPrice() * $currencyRate,
+            $product->getSpecialFromDate(),
+            $product->getSpecialToDate(),
+            $product->getStore()
+        );
+    }
+
+    /**
+     * Apply tier price for product if not return price that was before
+     *
+     * @param   Product $product
+     * @param   float $qty
+     * @param   float $finalPrice
+     * @return  float
+     */
+    protected function _applyTierPrice(Product $product, $qty, float $finalPrice) :float
+    {
+        if ($qty === null) {
+            return $finalPrice;
+        }
+
+        $tierPrice = $product->getTierPrice($qty);
+        if (is_numeric($tierPrice)) {
+            $finalPrice = min($finalPrice, $tierPrice);
+        }
+        return $finalPrice;
     }
 
     /**
@@ -86,7 +159,7 @@ class CurrencyPricingPrice
         $custGroup = $this->_getCustomerGroupId($product);
         if ($qty) {
             $prevQty = 1;
-            $prevPrice = $product->getPrice();
+            $prevPrice = $product->getPrice() * $this->realBaseCurrency->getRealCurrentCurrencyRate();
             $prevGroup = $allGroupsId;
 
             foreach ($prices as $price) {
@@ -190,7 +263,7 @@ class CurrencyPricingPrice
     }
 
     /**
-     * Determines whether the given tierPrice is allowed to be just given the users settings etc..
+     * Determines whether the given tierPrice is allowed to be used given the users settings etc..
      * @param $price
      *
      * @return bool
