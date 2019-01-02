@@ -35,12 +35,11 @@ class ProductWithCurrencyPrices
 
     /**
      * @param Product       $subject
-     * @param \Closure      $proceed
      * @param AbstractModel $object
      *
-     * @return Product
+     * @return array
      */
-    public function aroundSave(Product $subject, \Closure $proceed, AbstractModel $object): Product
+    public function beforeSave(Product $subject, AbstractModel $object): array
     {
         $currencyPrices = $object->getData('currency_price');
         $originalPrices = $this->currencyPriceResourceModel->loadPriceData($object->getId(), 'price');
@@ -55,8 +54,7 @@ class ProductWithCurrencyPrices
 
             $this->savePrice($currency, $currencyPrice, $object->getId(), $original === null ? null : $original['currency_price_id']);
         }
-        $proceed->call($subject, $object);
-        return $subject;
+        return [$object];
     }
 
     private function savePrice($currency, $currencyPrice, $priceId, $currencyPriceId)
@@ -79,24 +77,23 @@ class ProductWithCurrencyPrices
 
     /**
      * @param Product       $subject
-     * @param \Closure      $proceed
+     * @param               $result
      * @param AbstractModel $object
      *
      * @param               $entityId
-     * @param               $attributes
+     * @param array         $attributes
      *
      * @return Product
      */
-    public function aroundLoad(Product $subject, \Closure $proceed, AbstractModel $object, $entityId, $attributes = []): Product
+    public function afterLoad(Product $subject, $result, AbstractModel $object, $entityId, $attributes = []): Product
     {
-        $proceed->call($subject, $object, $entityId, $attributes);
         $currencyPriceObjects = $this->currencyPriceResourceModel->loadPriceData($entityId, 'price');
         $currencyPriceData = [];
         foreach ($currencyPriceObjects as $currencyPriceObject) {
             $currencyPriceData[$currencyPriceObject['currency']] = $currencyPriceObject['price'] === '0' ? '' : (string)$currencyPriceObject['price'];
         }
         $object->setData('currency_price' , $currencyPriceData);
-        return $subject;
+        return $result;
     }
 
 }

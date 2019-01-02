@@ -63,7 +63,11 @@ class CurrencyPrice extends \Magento\Framework\Model\ResourceModel\Db\AbstractDb
         $connection = $this->getConnection();
         $data = $this->_prepareDataForTable($priceObject, $this->getMainTable());
 
-        if (!empty($data[$this->getIdFieldName()])) {
+        if ($priceObject->getData('price') === '' && !empty($data[$this->getIdFieldName()])) {
+            $where = $connection->quoteInto($this->getIdFieldName() . ' = ?', $data[$this->getIdFieldName()]);
+            unset($data[$this->getIdFieldName()]);
+            $connection->delete($this->getMainTable(), $where);
+        } elseif (!empty($data[$this->getIdFieldName()])) {
             $where = $connection->quoteInto($this->getIdFieldName() . ' = ?', $data[$this->getIdFieldName()]);
             unset($data[$this->getIdFieldName()]);
             $connection->update($this->getMainTable(), $data, $where);

@@ -96,6 +96,7 @@ class CurrencyPricingPrice
      */
     protected function _applySpecialPrice(Price $subject, Product $product, float $finalPrice, float $currencyRate) :float
     {
+        // TODO Allow special price to be set per currency.
         return $subject->calculateSpecialPrice(
             $finalPrice,
             $product->getSpecialPrice() * $currencyRate,
