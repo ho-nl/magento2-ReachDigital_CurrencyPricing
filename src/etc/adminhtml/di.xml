@@ -15,9 +15,4 @@
             </argument>
         </arguments>
     </virtualType>
-    <preference for="Magento\Catalog\Model\Product\Attribute\Backend\TierPrice\UpdateHandler" type="ReachDigital\CurrencyPricing\Model\Product\Attribute\Backend\TierPrice\UpdateHandler"/>
-    <preference for="Magento\Catalog\Model\Product\Attribute\Backend\TierPrice\SaveHandler" type="ReachDigital\CurrencyPricing\Model\Product\Attribute\Backend\TierPrice\SaveHandler"/>
-    <type name="Magento\Catalog\Model\ResourceModel\Product\Indexer\Price\TierPrice">
-        <plugin name="CurrencyPricingTierPriceIndexer" type="ReachDigital\CurrencyPricing\Plugin\MagentoCatalogModelProductType\TierPriceWithCurrency" sortOrder="1" />
-    </type>
 </config>
