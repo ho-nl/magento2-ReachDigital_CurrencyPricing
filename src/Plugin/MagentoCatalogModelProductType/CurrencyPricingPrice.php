@@ -6,7 +6,9 @@ use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\Product\Type\Price;
 use Magento\Customer\Api\GroupManagementInterface;
 use Magento\Customer\Model\Session;
+use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Model\Store;
+use Magento\Store\Model\StoreManager;
 use ReachDigital\CurrencyPricing\Model\RealBaseCurrency\RealBaseCurrency;
 
 class CurrencyPricingPrice
@@ -33,24 +35,40 @@ class CurrencyPricingPrice
     private $realBaseCurrency;
 
     /**
+     * @var StoreManager
+     */
+    private $storeManager;
+
+    /**
+     * @var ScopeConfigInterface
+     */
+    private $config;
+
+    /**
      * CurrencyPricingPrice constructor.
      *
-     * @param GroupManagementInterface                          $groupManagement
-     * @param Session                                           $customerSession
-     * @param Store                                             $store
-     * @param RealBaseCurrency                                  $realBaseCurrency
+     * @param GroupManagementInterface $groupManagement
+     * @param Session                  $customerSession
+     * @param Store                    $store
+     * @param RealBaseCurrency         $realBaseCurrency
+     * @param StoreManager             $storeManager
+     * @param ScopeConfigInterface     $config
      */
     public function __construct(
         GroupManagementInterface $groupManagement,
         Session $customerSession,
         Store $store,
-        RealBaseCurrency $realBaseCurrency
+        RealBaseCurrency $realBaseCurrency,
+        StoreManager $storeManager,
+        ScopeConfigInterface $config
     )
     {
         $this->groupManagement = $groupManagement;
         $this->customerSession = $customerSession;
         $this->store = $store;
         $this->realBaseCurrency = $realBaseCurrency;
+        $this->storeManager = $storeManager;
+        $this->config = $config;
     }
 
     /**
@@ -72,7 +90,7 @@ class CurrencyPricingPrice
         $currencyRate = $this->realBaseCurrency->getRealCurrentCurrencyRate();
         $price = (float) $product->getPrice();
 
-        if ($product->getData('currency_price')[$currenctCurrencyCode] !== '') {
+        if (isset($product->getData('currency_price')[$currenctCurrencyCode]) && $product->getData('currency_price')[$currenctCurrencyCode] !== '') {
             $convertedPrice = (float)$product->getData('currency_price')[$currenctCurrencyCode];
         } else {
             $convertedPrice = $currencyRate * $price;
@@ -83,6 +101,53 @@ class CurrencyPricingPrice
             $tierPrice,
             $specialPrice
         );
+    }
+
+    /**
+     * Plugin for Price::setTierPrices().
+     *
+     * Ensures that the currency for the tier prices is also set.
+     *
+     * @param Price      $subject
+     * @param \Closure   $proceed
+     *
+     * @param Product    $product
+     * @param array|null $tierPrices
+     *
+     * @return Price
+     * @throws \Magento\Framework\Exception\LocalizedException
+     */
+    public function aroundSetTierPrices(Price $subject, \Closure $proceed, Product $product, array $tierPrices = null): Price {
+        // null array means leave everything as is
+        if ($tierPrices === null) {
+            return $subject;
+        }
+
+        $allGroupsId = $this->getAllCustomerGroupsId();
+        $websiteId = $this->getWebsiteForPriceScope();
+
+        // build the new array of tier prices
+        $prices = [];
+        foreach ($tierPrices as $price) {
+            $extensionAttributes = $price->getExtensionAttributes();
+            $priceWebsiteId = $websiteId;
+            if (isset($extensionAttributes) && is_numeric($extensionAttributes->getWebsiteId())) {
+                $priceWebsiteId = (string)$extensionAttributes->getWebsiteId();
+            }
+            $prices[] = [
+                'website_id' => $priceWebsiteId,
+                'cust_group' => $price->getCustomerGroupId(),
+                'website_price' => $price->getValue(),
+                'price' => $price->getValue(),
+                'all_groups' => ($price->getCustomerGroupId() == $allGroupsId),
+                'price_qty' => $price->getQty(),
+                'percentage_value' => $extensionAttributes ? $extensionAttributes->getPercentageValue() : null,
+                'currency' => $price->getData('currency')
+            ];
+        }
+        $product->setData('tier_price', $prices);
+
+        return $subject;
     }
 
     /**
@@ -117,10 +182,10 @@ class CurrencyPricingPrice
     protected function _applyTierPrice(Product $product, $qty, float $finalPrice) :float
     {
         if ($qty === null) {
-            return $finalPrice;
+            $tierPrice = $product->getTierPrice(1);
+        } else {
+            $tierPrice = $product->getTierPrice($qty);
         }
-
-        $tierPrice = $product->getTierPrice($qty);
         if (is_numeric($tierPrice)) {
             $finalPrice = min($finalPrice, $tierPrice);
         }
@@ -261,6 +326,23 @@ class CurrencyPricingPrice
     {
         // ex: 32000
         return $this->groupManagement->getAllCustomersGroup()->getId();
+    }
+
+    /**
+     * Returns the website to use for group or tier prices, based on the price scope setting
+     *
+     * @return int|mixed
+     * @throws \Magento\Framework\Exception\LocalizedException
+     */
+    protected function getWebsiteForPriceScope()
+    {
+        $websiteId = 0;
+        $value = $this->config->getValue('catalog/price/scope', \Magento\Store\Model\ScopeInterface::SCOPE_WEBSITE);
+        if ($value != 0) {
+            // use the website associated with the current store
+            $websiteId = $this->storeManager->getWebsite()->getId();
+        }
+        return $websiteId;
     }
 
     /**
