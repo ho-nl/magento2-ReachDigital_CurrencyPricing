@@ -7,6 +7,8 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
     <preference for="Magento\Catalog\Model\Product\Attribute\Backend\Tierprice" type="ReachDigital\CurrencyPricing\Model\Product\Attribute\Backend\TierpriceWithCurrency"/>
     <preference for="Magento\Catalog\Model\ResourceModel\Product\Attribute\Backend\Tierprice" type="ReachDigital\CurrencyPricing\Model\ResourceModel\Product\Attribute\Backend\TierpriceWithCurrency"/>
+    <preference for="Magento\Catalog\Model\Product\Attribute\Backend\TierPrice\UpdateHandler" type="ReachDigital\CurrencyPricing\Model\Product\Attribute\Backend\TierPrice\UpdateHandler"/>
+    <preference for="Magento\Catalog\Model\Product\Attribute\Backend\TierPrice\SaveHandler" type="ReachDigital\CurrencyPricing\Model\Product\Attribute\Backend\TierPrice\SaveHandler"/>
     <type name="Magento\Store\Model\Store">
         <plugin name="ReplaceBaseCurrencyWithCurrenctCurrency" type="ReachDigital\CurrencyPricing\Plugin\MagentoStoreModel\ReplaceBaseCurrencyWithCurrentCurrency" sortOrder="1" />
     </type>

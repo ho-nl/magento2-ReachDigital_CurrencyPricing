@@ -35,26 +35,32 @@ class ProductWithCurrencyPrices
 
     /**
      * @param Product       $subject
+     * @param \Closure      $proceed
      * @param AbstractModel $object
      *
-     * @return array
+     * @return Product
      */
-    public function beforeSave(Product $subject, AbstractModel $object): array
+    public function aroundSave(Product $subject, \Closure $proceed, AbstractModel $object): Product
     {
+        /** @var Product $returnValue */
+        $returnValue = $proceed($object);
         $currencyPrices = $object->getData('currency_price');
         $originalPrices = $this->currencyPriceResourceModel->loadPriceData($object->getId(), 'price');
-        foreach ($currencyPrices as $currency => $currencyPrice) {
-            $original = null;
-            foreach ($originalPrices as $originalPrice) {
-                if ($originalPrice['currency'] === $currency) {
-                    $original = $originalPrice;
-                    break;
+        // TODO Fix CurrencyPrices being null when creating new Product.
+        if ($currencyPrices !== null) {
+            foreach ($currencyPrices as $currency => $currencyPrice) {
+                $original = null;
+                foreach ($originalPrices as $originalPrice) {
+                    if ($originalPrice['currency'] === $currency) {
+                        $original = $originalPrice;
+                        break;
+                    }
                 }
+                $this->savePrice($currency, $currencyPrice, $object->getId(),
+                    $original === null ? null : $original['currency_price_id']);
             }
-
-            $this->savePrice($currency, $currencyPrice, $object->getId(), $original === null ? null : $original['currency_price_id']);
         }
-        return [$object];
+        return $returnValue;
     }
 
     private function savePrice($currency, $currencyPrice, $priceId, $currencyPriceId)

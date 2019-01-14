@@ -105,6 +105,31 @@ class UpgradeSchema implements UpgradeSchemaInterface
 
             $setup->getConnection()->createTable($currencyPriceTable);
         }
-        $setup->endSetup();
+
+        if (version_compare($context->getVersion(), '0.7', '<')) {
+            // For some unknown reason the foreign key constraint from tier prices to products stops working after we install our module...
+            // Dropping it and adding it back in fixes the issue.
+            // No, I have no idea why it stops working either. :'(
+            $setup->getConnection()->dropForeignKey('catalog_product_entity_tier_price', $setup->getFkName(
+                'catalog_product_entity_tier_price',
+                'entity_id',
+                'catalog_product_entity',
+                'entity_id'
+            ));
+
+            $setup->getConnection()->addForeignKey(
+                $setup->getFkName(
+                    'catalog_product_entity_tier_price',
+                    'entity_id',
+                    'catalog_product_entity',
+                    'entity_id'
+                ),
+                'catalog_product_entity_tier_price',
+                'entity_id',
+                $setup->getTable('catalog_product_entity'),
+                'entity_id',
+                \Magento\Framework\DB\Ddl\Table::ACTION_CASCADE
+            );
+        }
     }
 }
