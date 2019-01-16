@@ -46,7 +46,6 @@ class ProductWithCurrencyPrices
         $returnValue = $proceed($object);
         $currencyPrices = $object->getData('currency_price');
         $originalPrices = $this->currencyPriceResourceModel->loadPriceData($object->getId(), 'price');
-        // TODO Fix CurrencyPrices being null when creating new Product.
         if ($currencyPrices !== null) {
             foreach ($currencyPrices as $currency => $currencyPrice) {
                 $original = null;
@@ -56,8 +55,10 @@ class ProductWithCurrencyPrices
                         break;
                     }
                 }
-                $this->savePrice($currency, $currencyPrice, $object->getId(),
-                    $original === null ? null : $original['currency_price_id']);
+                if ($currencyPrice != '') {
+                    $this->savePrice($currency, $currencyPrice, $object->getId(),
+                        $original === null ? null : $original['currency_price_id']);
+                }
             }
         }
         return $returnValue;

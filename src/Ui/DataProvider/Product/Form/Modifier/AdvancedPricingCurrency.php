@@ -126,6 +126,13 @@ class AdvancedPricingCurrency extends AbstractModifier
             $currencyPriceData[$currencyPriceObject['currency']] = $currencyPriceObject['price'] === '0' ? '' : (string)$currencyPriceObject['price'];
         }
 
+        if (count($currencyPriceData) == 0) {
+            // set default to '' for currencies otherwise we cannot save
+            foreach ($this->currencyModel->getConfigAllowCurrencies() as $value) {
+                $currencyPriceData[$value] = "";
+            }
+        }
+
         $data[$productId][self::DATA_SOURCE_DEFAULT]['currency_price'] = $currencyPriceData;
 
         return $data;
