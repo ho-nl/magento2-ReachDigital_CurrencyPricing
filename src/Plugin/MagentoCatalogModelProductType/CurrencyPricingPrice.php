@@ -2,11 +2,14 @@
 
 namespace ReachDigital\CurrencyPricing\Plugin\MagentoCatalogModelProductType;
 
+use Magento\Catalog\Api\Data\ProductTierPriceExtensionFactory;
+use Magento\Catalog\Api\Data\ProductTierPriceInterfaceFactory;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\Product\Type\Price;
 use Magento\Customer\Api\GroupManagementInterface;
 use Magento\Customer\Model\Session;
 use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\App\ObjectManager;
 use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManager;
 use ReachDigital\CurrencyPricing\Model\RealBaseCurrency\RealBaseCurrency;
@@ -45,14 +48,26 @@ class CurrencyPricingPrice
     private $config;
 
     /**
+     * @var ProductTierPriceInterfaceFactory
+     */
+    private $tierPriceFactory;
+
+    /**
+     * @var ProductTierPriceExtensionFactory|null
+     */
+    private $tierPriceExtensionFactory;
+
+    /**
      * CurrencyPricingPrice constructor.
      *
-     * @param GroupManagementInterface $groupManagement
-     * @param Session                  $customerSession
-     * @param Store                    $store
-     * @param RealBaseCurrency         $realBaseCurrency
-     * @param StoreManager             $storeManager
-     * @param ScopeConfigInterface     $config
+     * @param GroupManagementInterface                                   $groupManagement
+     * @param Session                                                    $customerSession
+     * @param Store                                                      $store
+     * @param RealBaseCurrency                                           $realBaseCurrency
+     * @param StoreManager                                               $storeManager
+     * @param ScopeConfigInterface                                       $config
+     * @param ProductTierPriceInterfaceFactory $tierPriceFactory
+     * @param ProductTierPriceExtensionFactory|null                      $tierPriceExtensionFactory
      */
     public function __construct(
         GroupManagementInterface $groupManagement,
@@ -60,7 +75,9 @@ class CurrencyPricingPrice
         Store $store,
         RealBaseCurrency $realBaseCurrency,
         StoreManager $storeManager,
-        ScopeConfigInterface $config
+        ScopeConfigInterface $config,
+        ProductTierPriceInterfaceFactory $tierPriceFactory,
+        ProductTierPriceExtensionFactory $tierPriceExtensionFactory = null
     )
     {
         $this->groupManagement = $groupManagement;
@@ -69,6 +86,9 @@ class CurrencyPricingPrice
         $this->realBaseCurrency = $realBaseCurrency;
         $this->storeManager = $storeManager;
         $this->config = $config;
+        $this->tierPriceFactory = $tierPriceFactory;
+        $this->tierPriceExtensionFactory = $tierPriceExtensionFactory ?: ObjectManager::getInstance()
+            ->get(ProductTierPriceExtensionFactory::class);
     }
 
     /**
@@ -98,6 +118,7 @@ class CurrencyPricingPrice
         $tierPrice = $this->_applyTierPrice($product, $qty, $convertedPrice);
         $specialPrice = $this->_applySpecialPrice($subject, $product, $convertedPrice, $currencyRate);
         return min(
+            $convertedPrice,
             $tierPrice,
             $specialPrice
         );
@@ -225,7 +246,7 @@ class CurrencyPricingPrice
         $custGroup = $this->_getCustomerGroupId($product);
         if ($qty) {
             $prevQty = 1;
-            $prevPrice = $product->getPrice() * $this->realBaseCurrency->getRealCurrentCurrencyRate();
+            $prevPrice = PHP_INT_MAX;
             $prevGroup = $allGroupsId;
 
             foreach ($prices as $price) {
@@ -277,6 +298,47 @@ class CurrencyPricingPrice
         }
 
         return $prices ?: [];
+    }
+
+    /**
+     * Gets list of product tier prices including currency
+     *
+     * @param Price    $subject
+     * @param \Closure $proceed
+     * @param Product  $product
+     *
+     * @return \Magento\Catalog\Api\Data\ProductTierPriceInterface[]
+     * @throws \Magento\Framework\Exception\LocalizedException
+     */
+    public function aroundGetTierPrices(Price $subject, \Closure $proceed, Product $product): array
+    {
+        $prices = [];
+        $tierPrices = $this->getExistingPrices($product);
+        foreach ($tierPrices as $price) {
+            /** @var \Magento\Catalog\Api\Data\ProductTierPriceInterface $tierPrice */
+            $tierPrice = $this->tierPriceFactory->create()
+                ->setExtensionAttributes($this->tierPriceExtensionFactory->create());
+            $tierPrice->setCustomerGroupId($price['cust_group']);
+            if (array_key_exists('website_price', $price)) {
+                $value = $price['website_price'];
+            } else {
+                $value = $price['price'];
+            }
+            $tierPrice->setValue($value);
+            $tierPrice->setQty($price['price_qty']);
+            if (isset($price['percentage_value'])) {
+                $tierPrice->getExtensionAttributes()->setPercentageValue($price['percentage_value']);
+            }
+            $websiteId = isset($price['website_id']) ? $price['website_id'] : $this->getWebsiteForPriceScope();
+            $tierPrice->getExtensionAttributes()->setWebsiteId($websiteId);
+
+            if (array_key_exists('currency', $price)) {
+                $tierPrice['currency'] = $price['currency'];
+            }
+
+            $prices[] = $tierPrice;
+        }
+        return $prices;
     }
 
     /**
