@@ -63,6 +63,17 @@ $tierPrices[] = $tierPriceFactory->create(
     [
         'data' => [
             'customer_group_id' => \Magento\Customer\Model\Group::CUST_GROUP_ALL,
+            'qty' => 3,
+            'value' => 13,
+            'currency' => 'AUD'
+        ]
+    ]
+)->setExtensionAttributes($tierPriceExtensionAttributes1);
+
+$tierPrices[] = $tierPriceFactory->create(
+    [
+        'data' => [
+            'customer_group_id' => \Magento\Customer\Model\Group::CUST_GROUP_ALL,
             'qty' => 5,
             'value' => 5
         ]
@@ -120,7 +131,7 @@ $product->setTypeId(\Magento\Catalog\Model\Product\Type::TYPE_SIMPLE)
             'is_in_stock'               => 1,
         ]
     )->setCanSaveCustomOptions(true)
-    ->setData('currency_price', ['GBP' => 7, 'EUR' => 12])
+    ->setData('currency_price', ['GBP' => 7, 'EUR' => 12, 'MXN' => 180])
     ->setHasOptions(true);
 
 $oldOptions = [

@@ -131,5 +131,15 @@ class UpgradeSchema implements UpgradeSchemaInterface
                 \Magento\Framework\DB\Ddl\Table::ACTION_CASCADE
             );
         }
+
+        if (version_compare($context->getVersion(), '0.8', '<')) {
+
+            $setup->getConnection()->addColumn('quote_item', 'currency', [
+                'type' => \Magento\Framework\DB\Ddl\Table::TYPE_TEXT,
+                'comment'   => 'Currency for the price',
+                'length' => '3',
+                'nullable' => true
+            ]);
+        }
     }
 }
