@@ -91,6 +91,21 @@ class CurrencyPricingPrice
             ->get(ProductTierPriceExtensionFactory::class);
     }
 
+    public function aroundGetPrice(\Magento\Catalog\Model\Product\Type\Price $subject, \Closure $proceed, Product $product) {
+        $currenctCurrencyCode = $this->store->getCurrentCurrencyCode();
+        $currencyRate = $this->realBaseCurrency->getRealCurrentCurrencyRate();
+        $price = (float) $product->getData('price');
+
+        if (isset($product->getData('currency_price')[$currenctCurrencyCode]) && $product->getData('currency_price')[$currenctCurrencyCode] !== '') {
+            $convertedPrice = (float)$product->getData('currency_price')[$currenctCurrencyCode];
+        } else {
+            $convertedPrice = $currencyRate * $price;
+        }
+
+        return $convertedPrice;
+    }
+
+
     /**
      * Plugin for Price::getBasePrice().
      * Ensures that the returned price is already correct for the current currency of the customer.
@@ -106,15 +121,8 @@ class CurrencyPricingPrice
      * @return float|array
      */
     public function aroundGetBasePrice(Price $subject, \Closure $proceed, Product $product, $qty = null) {
-        $currenctCurrencyCode = $this->store->getCurrentCurrencyCode();
         $currencyRate = $this->realBaseCurrency->getRealCurrentCurrencyRate();
-        $price = (float) $product->getPrice();
-
-        if (isset($product->getData('currency_price')[$currenctCurrencyCode]) && $product->getData('currency_price')[$currenctCurrencyCode] !== '') {
-            $convertedPrice = (float)$product->getData('currency_price')[$currenctCurrencyCode];
-        } else {
-            $convertedPrice = $currencyRate * $price;
-        }
+        $convertedPrice = $product->getPrice();
         $tierPrice = $this->_applyTierPrice($product, $qty, $convertedPrice);
         $specialPrice = $this->_applySpecialPrice($subject, $product, $convertedPrice, $currencyRate);
         return min(
