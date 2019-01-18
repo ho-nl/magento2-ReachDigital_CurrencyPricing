@@ -58,6 +58,11 @@ class CurrencyPricingPrice
     private $tierPriceExtensionFactory;
 
     /**
+     * @var \ReachDigital\CurrencyPricing\Model\ResourceModel\CurrencyPrice
+     */
+    private $currencyPriceResourceModel;
+
+    /**
      * CurrencyPricingPrice constructor.
      *
      * @param GroupManagementInterface                                   $groupManagement
@@ -77,6 +82,7 @@ class CurrencyPricingPrice
         StoreManager $storeManager,
         ScopeConfigInterface $config,
         ProductTierPriceInterfaceFactory $tierPriceFactory,
+        \ReachDigital\CurrencyPricing\Model\ResourceModel\CurrencyPrice $currencyPriceResourceModel,
         ProductTierPriceExtensionFactory $tierPriceExtensionFactory = null
     )
     {
@@ -89,7 +95,30 @@ class CurrencyPricingPrice
         $this->tierPriceFactory = $tierPriceFactory;
         $this->tierPriceExtensionFactory = $tierPriceExtensionFactory ?: ObjectManager::getInstance()
             ->get(ProductTierPriceExtensionFactory::class);
+        $this->currencyPriceResourceModel= $currencyPriceResourceModel;
     }
+
+    public function aroundGetPrice(\Magento\Catalog\Model\Product\Type\Price $subject, \Closure $proceed, Product $product) {
+        $currenctCurrencyCode = $this->store->getCurrentCurrencyCode();
+        $currencyRate = $this->realBaseCurrency->getRealCurrentCurrencyRate();
+        $price = (float) $product->getData('price');
+
+        $currencyPriceObjects = $this->currencyPriceResourceModel->loadPriceData($product->getId(), 'price');
+        $currencyPriceData = [];
+        foreach ($currencyPriceObjects as $currencyPriceObject) {
+            $currencyPriceData[$currencyPriceObject['currency']] = $currencyPriceObject['price'] === '0' ? '' : (string)$currencyPriceObject['price'];
+        }
+        $product->setData('currency_price', $currencyPriceData);
+
+        if (isset($product->getData('currency_price')[$currenctCurrencyCode]) && $product->getData('currency_price')[$currenctCurrencyCode] !== '') {
+            $convertedPrice = (float)$product->getData('currency_price')[$currenctCurrencyCode];
+        } else {
+            $convertedPrice = $currencyRate * $price;
+        }
+
+        return $convertedPrice;
+    }
+
 
     /**
      * Plugin for Price::getBasePrice().
@@ -106,15 +135,8 @@ class CurrencyPricingPrice
      * @return float|array
      */
     public function aroundGetBasePrice(Price $subject, \Closure $proceed, Product $product, $qty = null) {
-        $currenctCurrencyCode = $this->store->getCurrentCurrencyCode();
         $currencyRate = $this->realBaseCurrency->getRealCurrentCurrencyRate();
-        $price = (float) $product->getPrice();
-
-        if (isset($product->getData('currency_price')[$currenctCurrencyCode]) && $product->getData('currency_price')[$currenctCurrencyCode] !== '') {
-            $convertedPrice = (float)$product->getData('currency_price')[$currenctCurrencyCode];
-        } else {
-            $convertedPrice = $currencyRate * $price;
-        }
+        $convertedPrice = $product->getPrice();
         $tierPrice = $this->_applyTierPrice($product, $qty, $convertedPrice);
         $specialPrice = $this->_applySpecialPrice($subject, $product, $convertedPrice, $currencyRate);
         return min(
