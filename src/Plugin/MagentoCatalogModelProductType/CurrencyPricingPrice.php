@@ -245,7 +245,7 @@ class CurrencyPricingPrice
      * @return float|array
      * @throws \Magento\Framework\Exception\LocalizedException
      */
-    public function aroundGetTierPrice(Price $subject, \Closure $proceed, float $qty, Product $product) {
+    public function aroundGetTierPrice(Price $subject, \Closure $proceed, $qty, Product $product) {
 
         $allGroupsId = $this->getAllCustomerGroupsId();
 
