@@ -204,10 +204,25 @@ class CurrencyPricingPrice
      */
     protected function _applySpecialPrice(Price $subject, Product $product, float $finalPrice, float $currencyRate) :float
     {
-        // TODO Allow special price to be set per currency.
+        $currenctCurrencyCode = $this->store->getCurrentCurrencyCode();
+        $specialPrice = (float) $product->getSpecialPrice();
+
+        $currencyPriceObjects = $this->currencyPriceResourceModel->loadPriceData($product->getId(), 'special');
+        $currencyPriceData = [];
+        foreach ($currencyPriceObjects as $currencyPriceObject) {
+            $currencyPriceData[$currencyPriceObject['currency']] = $currencyPriceObject['price'] === '0' ? '' : (string)$currencyPriceObject['price'];
+        }
+        $product->setData('special_price_currency', $currencyPriceData);
+
+        if (isset($product->getData('special_price_currency')[$currenctCurrencyCode]) && $product->getData('special_price_currency')[$currenctCurrencyCode] !== '') {
+            $convertedPrice = (float)$product->getData('special_price_currency')[$currenctCurrencyCode];
+        } else {
+            $convertedPrice = $currencyRate * $specialPrice;
+        }
+
         return $subject->calculateSpecialPrice(
             $finalPrice,
-            $product->getSpecialPrice() * $currencyRate,
+            $convertedPrice,
             $product->getSpecialFromDate(),
             $product->getSpecialToDate(),
             $product->getStore()

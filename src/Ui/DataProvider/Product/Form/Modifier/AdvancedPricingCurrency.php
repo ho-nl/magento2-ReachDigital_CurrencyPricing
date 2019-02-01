@@ -71,6 +71,40 @@ class AdvancedPricingCurrency extends AbstractModifier
             ]
         ];
 
+        $specialPriceCurrencies = [];
+        foreach ($this->currencyModel->getConfigAllowCurrencies() as $value) {
+            $specialPriceCurrencies[$value] = [
+                'arguments' => [
+                    'data' => [
+                        'config' => [
+                            'componentType' => 'field',
+                            'formElement' => 'input',
+                            'dataType' => 'price',
+                            'label' => $value,
+                            'enableLable' => 'true',
+                            'dataScope' => 'special_price_currency.' . $value
+                        ]
+                    ]
+                ]
+            ];
+        }
+
+        $meta['advanced_pricing_modal']['children']['advanced-pricing']['children']['special_price_currency'] = [
+            'arguments' => [
+                'data' => [
+                    'config' => [
+                        'componentType' => 'container',
+                        'formElement'=> 'container',
+                        'breakLine' => false,
+                        'label' => __('Special price currencies'),
+                        'required' => '0',
+                        'sortOrder' => 15
+                    ]
+                ]
+            ],
+            'children' => $specialPriceCurrencies
+        ];
+
         $currencies = [];
 
         foreach ($this->currencyModel->getConfigAllowCurrencies() as $value) {
@@ -134,6 +168,22 @@ class AdvancedPricingCurrency extends AbstractModifier
         }
 
         $data[$productId][self::DATA_SOURCE_DEFAULT]['currency_price'] = $currencyPriceData;
+
+
+        $specialCurrencyPriceObjects = $this->currencyPriceResourceModel->loadPriceData($productId, 'special_price');
+        $specialCurrencyPriceData = [];
+        foreach ($specialCurrencyPriceObjects as $currencyPriceObject) {
+            $specialCurrencyPriceData[$currencyPriceObject['currency']] = $currencyPriceObject['price'] === '0' ? '' : (string)$currencyPriceObject['price'];
+        }
+
+        if (count($specialCurrencyPriceData) == 0) {
+            // set default to '' for currencies otherwise we cannot save
+            foreach ($this->currencyModel->getConfigAllowCurrencies() as $value) {
+                $specialCurrencyPriceData[$value] = "";
+            }
+        }
+
+        $data[$productId][self::DATA_SOURCE_DEFAULT]['special_price_currency'] = $specialCurrencyPriceData;
 
         return $data;
     }
