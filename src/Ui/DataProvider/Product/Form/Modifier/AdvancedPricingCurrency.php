@@ -170,7 +170,7 @@ class AdvancedPricingCurrency extends AbstractModifier
         $data[$productId][self::DATA_SOURCE_DEFAULT]['currency_price'] = $currencyPriceData;
 
 
-        $specialCurrencyPriceObjects = $this->currencyPriceResourceModel->loadPriceData($productId, 'special_price');
+        $specialCurrencyPriceObjects = $this->currencyPriceResourceModel->loadPriceData($productId, 'special');
         $specialCurrencyPriceData = [];
         foreach ($specialCurrencyPriceObjects as $currencyPriceObject) {
             $specialCurrencyPriceData[$currencyPriceObject['currency']] = $currencyPriceObject['price'] === '0' ? '' : (string)$currencyPriceObject['price'];
