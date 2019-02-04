@@ -103,12 +103,15 @@ class CurrencyPricingPrice
         $currencyRate = $this->realBaseCurrency->getRealCurrentCurrencyRate();
         $price = (float) $product->getData('price');
 
-        $currencyPriceObjects = $this->currencyPriceResourceModel->loadPriceData($product->getId(), 'price');
-        $currencyPriceData = [];
-        foreach ($currencyPriceObjects as $currencyPriceObject) {
-            $currencyPriceData[$currencyPriceObject['currency']] = $currencyPriceObject['price'] === '0' ? '' : (string)$currencyPriceObject['price'];
+        if (!$product->getData('currency_price')) {
+            $currencyPriceObjects = $this->currencyPriceResourceModel->loadPriceData($product->getId(), 'price');
+            $currencyPriceData    = [];
+            foreach ($currencyPriceObjects as $currencyPriceObject) {
+                $currencyPriceData[$currencyPriceObject['currency']] = $currencyPriceObject['price'] === '0' ? ''
+                    : (string)$currencyPriceObject['price'];
+            }
+            $product->setData('currency_price', $currencyPriceData);
         }
-        $product->setData('currency_price', $currencyPriceData);
 
         if (isset($product->getData('currency_price')[$currenctCurrencyCode]) && $product->getData('currency_price')[$currenctCurrencyCode] !== '') {
             $convertedPrice = (float)$product->getData('currency_price')[$currenctCurrencyCode];

@@ -55,11 +55,9 @@ class ProductWithCurrencyPrices
                         break;
                     }
                 }
-                if ($currencyPrice != '') {
-                    $this->savePrice($currency, $currencyPrice, $object->getId(),
-                        $original === null ? null : $original['currency_price_id'],
-                        'price');
-                }
+                $this->savePrice($currency, $currencyPrice, $object->getId(),
+                    $original === null ? null : $original['currency_price_id'],
+                    'price');
             }
         }
 
@@ -75,11 +73,9 @@ class ProductWithCurrencyPrices
                         break;
                     }
                 }
-                if ($currencyPrice != '') {
-                    $this->savePrice($currency, $currencyPrice, $object->getId(),
-                        $original === null ? null : $original['currency_price_id'],
-                        'special');
-                }
+                $this->savePrice($currency, $currencyPrice, $object->getId(),
+                    $original === null ? null : $original['currency_price_id'],
+                    'special');
             }
         }
 

@@ -172,6 +172,7 @@ class CurrencyPricingPriceTest extends TestCase
         $product = $this->getProduct();
         $price = $this->getPrice();
 
+        $store->setData('current_currency', null);
         $store->setCurrentCurrencyCode('KRW');
         $this->assertEquals(1198.2, $price->getBasePrice($product));
     }
@@ -272,9 +273,11 @@ class CurrencyPricingPriceTest extends TestCase
 
         $product = $this->getProduct();
 
+        $store->setData('current_currency', null);
         $store->setCurrentCurrencyCode('GBP');
         $this->assertEquals(7.807, $price->getBasePrice($product));
         // Check that the other Currency price was not altered or removed.
+        $store->setData('current_currency', null);
         $store->setCurrentCurrencyCode('MXN');
         $this->assertEquals(180, $price->getBasePrice($product));
     }
@@ -394,6 +397,7 @@ class CurrencyPricingPriceTest extends TestCase
 
         $product = $this->getProduct();
 
+        $store->setData('current_currency', null);
         $store->setCurrentCurrencyCode('KRW');
         $this->assertEquals(1000, $price->getBasePrice($product));
         // Check that the other tier price was not altered or removed.
