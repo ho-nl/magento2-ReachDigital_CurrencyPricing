@@ -309,9 +309,11 @@ class CurrencyPricingPriceTest extends TestCase
 
         $product = $this->getProduct();
 
+        $store->setData('current_currency', null);
         $store->setCurrentCurrencyCode('KRW');
         $this->assertEquals(1200, $price->getBasePrice($product));
         // Check that the other Currency price was not altered or removed.
+        $store->setData('current_currency', null);
         $store->setCurrentCurrencyCode('MXN');
         $this->assertEquals(180, $price->getBasePrice($product));
     }
