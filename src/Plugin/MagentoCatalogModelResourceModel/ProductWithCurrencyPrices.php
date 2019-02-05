@@ -55,20 +55,38 @@ class ProductWithCurrencyPrices
                         break;
                     }
                 }
-                if ($currencyPrice != '') {
-                    $this->savePrice($currency, $currencyPrice, $object->getId(),
-                        $original === null ? null : $original['currency_price_id']);
-                }
+                $this->savePrice($currency, $currencyPrice, $object->getId(),
+                    $original === null ? null : $original['currency_price_id'],
+                    'price');
             }
         }
+
+
+        $specialCurrencyPrices = $object->getData('special_price_currency');
+        $originalCurrencyPrices = $this->currencyPriceResourceModel->loadPriceData($object->getId(), 'special_price');
+        if ($specialCurrencyPrices !== null) {
+            foreach ($specialCurrencyPrices as $currency => $currencyPrice) {
+                $original = null;
+                foreach ($originalCurrencyPrices as $originalPrice) {
+                    if ($originalPrice['currency'] === $currency) {
+                        $original = $originalPrice;
+                        break;
+                    }
+                }
+                $this->savePrice($currency, $currencyPrice, $object->getId(),
+                    $original === null ? null : $original['currency_price_id'],
+                    'special');
+            }
+        }
+
         return $returnValue;
     }
 
-    private function savePrice($currency, $currencyPrice, $priceId, $currencyPriceId)
+    private function savePrice($currency, $currencyPrice, $priceId, $currencyPriceId, $type)
     {
         $dataArray = [
             'currency' => $currency,
-            'type' => 'price',
+            'type' => $type,
             'price' => $currencyPrice,
             'entity_id' => $priceId
         ];
@@ -100,6 +118,14 @@ class ProductWithCurrencyPrices
             $currencyPriceData[$currencyPriceObject['currency']] = $currencyPriceObject['price'] === '0' ? '' : (string)$currencyPriceObject['price'];
         }
         $object->setData('currency_price' , $currencyPriceData);
+
+
+        $specialCurrencyPriceObjects = $this->currencyPriceResourceModel->loadPriceData($entityId, 'special');
+        $specialCurrencyPriceData = [];
+        foreach ($specialCurrencyPriceObjects as $currencyPriceObject) {
+            $specialCurrencyPriceData[$currencyPriceObject['currency']] = $currencyPriceObject['price'] === '0' ? '' : (string)$currencyPriceObject['price'];
+        }
+        $object->setData('special_price_currency' , $specialCurrencyPriceData);
         return $result;
     }
 

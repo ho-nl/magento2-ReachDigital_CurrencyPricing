@@ -132,6 +132,10 @@ $product->setTypeId(\Magento\Catalog\Model\Product\Type::TYPE_SIMPLE)
         ]
     )->setCanSaveCustomOptions(true)
     ->setData('currency_price', ['GBP' => 7, 'EUR' => 12, 'MXN' => 180])
+    ->setSpecialPrice(1000)
+    ->setSpecialFromDate('01-01-2017')
+    ->setSpecialToDate('01-01-3017')
+    ->setData('special_price_currency', ['CNY' => 45])
     ->setHasOptions(true);
 
 $oldOptions = [
