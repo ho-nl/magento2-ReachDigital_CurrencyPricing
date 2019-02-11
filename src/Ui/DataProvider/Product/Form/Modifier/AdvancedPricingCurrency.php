@@ -128,12 +128,13 @@ class AdvancedPricingCurrency extends AbstractModifier
             'arguments' => [
                 'data' => [
                     'config' => [
-                        'componentType' => 'container',
-                        'formElement'=> 'container',
+                        'componentType' => 'fieldset',
                         'breakLine' => false,
                         'label' => __('Currency price'),
                         'required' => '0',
-                        'sortOrder' => 15
+                        'sortOrder' => 15,
+                        'collapsible' => true,
+                        'opened' => false
                     ]
                 ]
             ],
