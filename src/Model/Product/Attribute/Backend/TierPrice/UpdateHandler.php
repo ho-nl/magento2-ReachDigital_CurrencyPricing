@@ -25,7 +25,7 @@ class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\Tie
     /**
      * @var \Magento\Customer\Api\GroupManagementInterface
      */
-    private $groupManagement;
+    protected $groupManagement;
 
     /**
      * @var \Magento\Framework\EntityManager\MetadataPool
@@ -67,8 +67,7 @@ class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\Tie
      * @param \Magento\Catalog\Api\Data\ProductInterface|object $entity
      * @param array $arguments
      * @return \Magento\Catalog\Api\Data\ProductInterface|object
-     * @throws \Magento\Framework\Exception\NoSuchEntityException
-     * @throws \Magento\Framework\Exception\LocalizedException
+     * @throws \Magento\Framework\Exception\InputException
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function execute($entity, $arguments = [])
@@ -120,7 +119,7 @@ class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\Tie
      * @param array $objectArray
      * @return array
      */
-    private function getAdditionalFields(array $objectArray): array
+    protected function getAdditionalFields(array $objectArray): array
     {
         $percentageValue = $this->getPercentage($objectArray);
         return [
@@ -135,7 +134,7 @@ class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\Tie
      * @param array $priceRow
      * @return int|null
      */
-    private function getPercentage(array $priceRow)
+    protected function getPercentage(array $priceRow)
     {
         return isset($priceRow['percentage_value']) && is_numeric($priceRow['percentage_value'])
             ? (int)$priceRow['percentage_value']
@@ -175,7 +174,7 @@ class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\Tie
     }
 
     /**
-     * Insert new tier prices for processed product
+     * Insert new tier prices for processed product.
      *
      * @param int $productId
      * @param array $valuesToInsert
@@ -199,7 +198,7 @@ class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\Tie
     }
 
     /**
-     * Delete tier price values for processed product
+     * Delete tier price values for processed product.
      *
      * @param int $productId
      * @param array $valuesToDelete
@@ -217,7 +216,7 @@ class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\Tie
     }
 
     /**
-     * Get generated price key based on price data
+     * Get generated price key based on price data.
      *
      * @param array $priceData
      * @return string
@@ -239,7 +238,7 @@ class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\Tie
      * @return array
      * @throws \Magento\Framework\Exception\LocalizedException
      */
-    private function prepareTierPrice(array $data): array
+    protected function prepareTierPrice(array $data): array
     {
         $useForAllGroups = (int)$data['cust_group'] === $this->groupManagement->getAllCustomersGroup()->getId();
         $customerGroupId = $useForAllGroups ? 0 : $data['cust_group'];
@@ -259,7 +258,7 @@ class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\Tie
     }
 
     /**
-     * Check by id is website global
+     * Check by id is website global.
      *
      * @param int $websiteId
      * @return bool
@@ -289,6 +288,8 @@ class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\Tie
     }
 
     /**
+     * Prepare new data for save.
+     *
      * @param array $priceRows
      * @param bool $isGlobal
      * @return array

@@ -6,9 +6,9 @@
 namespace ReachDigital\CurrencyPricing\Model\Product\Attribute\Backend\TierPrice;
 
 use Magento\Framework\EntityManager\Operation\ExtensionInterface;
-use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\Catalog\Api\ProductAttributeRepositoryInterface;
+use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Customer\Api\GroupManagementInterface;
 use Magento\Framework\EntityManager\MetadataPool;
 use Magento\Catalog\Model\ResourceModel\Product\Attribute\Backend\Tierprice;
@@ -28,7 +28,7 @@ class SaveHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\TierP
     /**
      * @var \Magento\Customer\Api\GroupManagementInterface
      */
-    private $groupManagement;
+    protected $groupManagement;
 
     /**
      * @var \Magento\Framework\EntityManager\MetadataPool
@@ -72,8 +72,6 @@ class SaveHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\TierP
      * @param \Magento\Catalog\Api\Data\ProductInterface|object $entity
      * @param array $arguments
      * @return \Magento\Catalog\Api\Data\ProductInterface|object
-     * @throws \Magento\Framework\Exception\NoSuchEntityException
-     * @throws \Magento\Framework\Exception\LocalizedException
      * @throws \Magento\Framework\Exception\InputException
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
@@ -121,7 +119,7 @@ class SaveHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\TierP
      *
      * @return array
      */
-    private function getAdditionalFields(array $objectArray): array
+    protected function getAdditionalFields(array $objectArray): array
     {
         $percentageValue = $this->getPercentage($objectArray);
         return [
@@ -136,7 +134,7 @@ class SaveHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\TierP
      * @param array $priceRow
      * @return int|null
      */
-    private function getPercentage(array $priceRow)
+    protected function getPercentage(array $priceRow)
     {
         return isset($priceRow['percentage_value']) && is_numeric($priceRow['percentage_value'])
             ? (int)$priceRow['percentage_value']
@@ -150,7 +148,7 @@ class SaveHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\TierP
      * @return array
      * @throws \Magento\Framework\Exception\LocalizedException
      */
-    private function prepareTierPrice(array $data): array
+    protected function prepareTierPrice(array $data): array
     {
         $useForAllGroups = (int)$data['cust_group'] === $this->groupManagement->getAllCustomersGroup()->getId();
         $customerGroupId = $useForAllGroups ? 0 : $data['cust_group'];
