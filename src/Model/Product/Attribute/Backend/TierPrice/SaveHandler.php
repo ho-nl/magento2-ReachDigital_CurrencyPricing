@@ -129,19 +129,6 @@ class SaveHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\TierP
     }
 
     /**
-     * Check whether price has percentage value.
-     *
-     * @param array $priceRow
-     * @return int|null
-     */
-    protected function getPercentage(array $priceRow)
-    {
-        return isset($priceRow['percentage_value']) && is_numeric($priceRow['percentage_value'])
-            ? (int)$priceRow['percentage_value']
-            : null;
-    }
-
-    /**
      * Prepare tier price data by provided price row data
      *
      * @param array $data
