@@ -20,6 +20,7 @@ class TierpriceWithCurrency extends Tierprice
     {
         $columns = parent::_loadPriceDataColumns($columns);
         $columns['currency'] = 'currency';
+        $columns['is_special'] = 'is_special';
         return $columns;
     }
 }

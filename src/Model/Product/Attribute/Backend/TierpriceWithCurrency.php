@@ -19,6 +19,9 @@ class TierpriceWithCurrency extends Tierprice
         if (isset($objectArray['currency'])) {
             $uniqueFields['currency'] = $objectArray['currency'];
         }
+        if (isset($objectArray['is_special'])) {
+            $uniqueFields['is_special'] = $objectArray['is_special'];
+        }
         return $uniqueFields;
     }
 
@@ -28,7 +31,8 @@ class TierpriceWithCurrency extends Tierprice
     protected function getAdditionalFields($objectArray) :array
     {
         return [
-            'currency' => $objectArray['currency'] ?? null
+            'currency' => $objectArray['currency'] ?? null,
+            'is_special' => $objectArray['is_special']
         ];
     }
 
@@ -39,7 +43,7 @@ class TierpriceWithCurrency extends Tierprice
      */
     protected function _getDuplicateErrorMessage() :Phrase
     {
-        return __('We found a duplicate website, tier price, customer group, currency and quantity.');
+        return __('We found a duplicate website, tier price, customer group, currency, is_special and quantity.');
     }
 
     /**
@@ -51,11 +55,13 @@ class TierpriceWithCurrency extends Tierprice
     {
         $isChanged = false;
         foreach ($valuesToUpdate as $key => $value) {
-            if (!empty($value['currency']) && $oldValues[$key]['currency'] !== $value['currency']) {
+            if ((!empty($value['currency']) && $oldValues[$key]['currency'] !== $value['currency'])
+                    || (!empty($value['is_special']) && $oldValues[$key]['is_special'] !== $value['is_special'])) {
                 $currency = new \Magento\Framework\DataObject(
                     [
                         'value_id' => $oldValues[$key]['price_id'],
                         'currency' => $value['currency'],
+                        'is_special' => $value['is_special']
                     ]
                 );
                 $this->_getResource()->savePriceData($currency);

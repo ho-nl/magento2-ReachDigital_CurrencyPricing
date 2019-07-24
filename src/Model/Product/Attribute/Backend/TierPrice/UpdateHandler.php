@@ -23,11 +23,6 @@ class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\Tie
     private $attributeRepository;
 
     /**
-     * @var \Magento\Customer\Api\GroupManagementInterface
-     */
-    protected $groupManagement;
-
-    /**
      * @var \Magento\Framework\EntityManager\MetadataPool
      */
     private $metadataPoll;
@@ -58,7 +53,6 @@ class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\Tie
             $tierPriceResource);
         $this->storeManager = $storeManager;
         $this->attributeRepository = $attributeRepository;
-        $this->groupManagement = $groupManagement;
         $this->metadataPoll = $metadataPool;
         $this->tierPriceResource = $tierPriceResource;
     }
@@ -121,11 +115,9 @@ class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\Tie
      */
     protected function getAdditionalFields(array $objectArray): array
     {
-        $percentageValue = $this->getPercentage($objectArray);
-        return [
-            'value' => $percentageValue ? null : $objectArray['price'],
-            'percentage_value' => $percentageValue ?: null,
-        ];
+        return array_merge($this->_getAdditionalFields($objectArray),
+            parent::getAdditionalFields($objectArray)
+        );
     }
 
     /**
@@ -219,32 +211,6 @@ class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\Tie
     }
 
     /**
-     * Prepare tier price data by provided price row data
-     *
-     * @param array $data
-     * @return array
-     * @throws \Magento\Framework\Exception\LocalizedException
-     */
-    protected function prepareTierPrice(array $data): array
-    {
-        $useForAllGroups = (int)$data['cust_group'] === $this->groupManagement->getAllCustomersGroup()->getId();
-        $customerGroupId = $useForAllGroups ? 0 : $data['cust_group'];
-        $tierPrice = array_merge(
-            $this->getAdditionalFields($data),
-            $this->_getAdditionalFields($data),
-            [
-                'website_id' => $data['website_id'],
-                'all_groups' => (int)$useForAllGroups,
-                'customer_group_id' => $customerGroupId,
-                'value' => $data['price'] ?? null,
-                'qty' => (int)$data['price_qty']
-            ]
-        );
-
-        return $tierPrice;
-    }
-
-    /**
      * Check by id is website global.
      *
      * @param int $websiteId
@@ -304,14 +270,14 @@ class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\Tie
      * @return array
      */
     protected function getAdditionalFieldNames() :array {
-        return ['currency'];
+        return ['currency', 'is_special'];
     }
 
     /**
      * @return array
      */
     protected function getAdditionalUniqueFieldNames() :array {
-        return ['currency'];
+        return ['currency', 'is_special'];
     }
 
     /**

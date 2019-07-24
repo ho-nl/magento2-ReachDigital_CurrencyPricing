@@ -7,6 +7,8 @@ namespace ReachDigital\CurrencyPricing\Ui\DataProvider\Product\Form\Modifier;
 
 use Magento\Catalog\Model\Locator\LocatorInterface;
 use Magento\Catalog\Ui\DataProvider\Product\Form\Modifier\AbstractModifier;
+use Magento\Ui\Component\Form\Element\Checkbox;
+use Magento\Ui\Component\Form\Element\DataType\Number;
 use Magento\Ui\Component\Form\Element\Select;
 use ReachDigital\CurrencyPricing\Model\ResourceModel\CurrencyPrice;
 
@@ -66,6 +68,25 @@ class AdvancedPricingCurrency extends AbstractModifier
                         'label' => __('Currency'),
                         'dataScope' => 'currency',
                         'sortOrder' => 35
+                    ]
+                ]
+            ]
+        ];
+
+        $meta['advanced_pricing_modal']['children']['advanced-pricing']['children']['tier_price']['children']['record']['children']['is_special'] = [
+            'arguments' => [
+                'data' => [
+                    'config' => [
+                        'dataType' => Number::NAME,
+                        'formElement' => Checkbox::NAME,
+                        'componentType' => 'field',
+                        'label' => __('Is special price'),
+                        'dataScope' => 'is_special',
+                        'sortOrder' => 45,
+                        'valueMap' => [
+                            'true' => '1',
+                            'false' => '0',
+                        ],
                     ]
                 ]
             ]
