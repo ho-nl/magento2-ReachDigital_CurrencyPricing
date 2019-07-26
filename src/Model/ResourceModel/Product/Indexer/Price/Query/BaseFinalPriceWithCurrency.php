@@ -143,27 +143,6 @@ class BaseFinalPriceWithCurrency
             'tp.entity_id = e.entity_id AND' .
             ' tp.customer_group_id = cg.customer_group_id AND tp.website_id = pw.website_id',
             []
-        )->joinLeft(
-        // calculate tier price specified as Website = `All Websites` and Customer Group = `Specific Customer Group`
-            ['tier_price_1' => $this->getTable('catalog_product_entity_tier_price')],
-            $this->getTierPriceCondition($linkField, '1', '0', '0', $currency, $isBaseCurrency),
-            []
-        )->joinLeft(
-        // calculate tier price specified as Website = `Specific Website`
-        //and Customer Group = `Specific Customer Group`
-            ['tier_price_2' => $this->getTable('catalog_product_entity_tier_price')],
-            $this->getTierPriceCondition($linkField, '2', '0', 'pw.website_id', $currency, $isBaseCurrency),
-            []
-        )->joinLeft(
-        // calculate tier price specified as Website = `All Websites` and Customer Group = `ALL GROUPS`
-            ['tier_price_3' => $this->getTable('catalog_product_entity_tier_price')],
-            $this->getTierPriceCondition($linkField, '3', '1', '0', $currency, $isBaseCurrency),
-            []
-        )->joinLeft(
-        // calculate tier price specified as Website = `Specific Website` and Customer Group = `ALL GROUPS`
-            ['tier_price_4' => $this->getTable('catalog_product_entity_tier_price')],
-            $this->getTierPriceCondition($linkField, '4', '1', 'pw.website_id', $currency, $isBaseCurrency),
-            []
         );
 
         foreach ($dimensions as $dimension) {
@@ -202,6 +181,31 @@ class BaseFinalPriceWithCurrency
             $specialPrice,
             $maxUnsignedBigint
         );
+
+
+        $select->joinLeft(
+        // calculate tier price specified as Website = `All Websites` and Customer Group = `Specific Customer Group`
+            ['tier_price_1' => $this->getTable('catalog_product_entity_tier_price')],
+            $this->getTierPriceCondition($linkField, '1', '0', '0', $currency, $isBaseCurrency, $specialFromExpr, $specialToExpr),
+            []
+        )->joinLeft(
+        // calculate tier price specified as Website = `Specific Website`
+        //and Customer Group = `Specific Customer Group`
+            ['tier_price_2' => $this->getTable('catalog_product_entity_tier_price')],
+            $this->getTierPriceCondition($linkField, '2', '0', 'pw.website_id', $currency, $isBaseCurrency, $specialFromExpr, $specialToExpr),
+            []
+        )->joinLeft(
+        // calculate tier price specified as Website = `All Websites` and Customer Group = `ALL GROUPS`
+            ['tier_price_3' => $this->getTable('catalog_product_entity_tier_price')],
+            $this->getTierPriceCondition($linkField, '3', '1', '0', $currency, $isBaseCurrency, $specialFromExpr, $specialToExpr),
+            []
+        )->joinLeft(
+        // calculate tier price specified as Website = `Specific Website` and Customer Group = `ALL GROUPS`
+            ['tier_price_4' => $this->getTable('catalog_product_entity_tier_price')],
+            $this->getTierPriceCondition($linkField, '4', '1', 'pw.website_id', $currency, $isBaseCurrency, $specialFromExpr, $specialToExpr),
+            []
+        );
+
         $tierPrice = $this->getTotalTierPriceExpression($price);
         $tierPriceExpr = $connection->getIfNullSql($tierPrice, $maxUnsignedBigint);
         $finalPrice = $connection->getLeastSql([
@@ -262,11 +266,12 @@ class BaseFinalPriceWithCurrency
      *
      * @return string
      */
-    private function getTierPriceCondition($linkField, $tierPriceExpressionNumber, $allGroups, $website, $currency, $isBaseCurrency): string
+    private function getTierPriceCondition($linkField, $tierPriceExpressionNumber, $allGroups, $website, $currency, $isBaseCurrency, $specialFromExpression, $specialToExpression): string
     {
         $tierPriceCondition = 'tier_price_' . $tierPriceExpressionNumber. '.' . $linkField . ' = e.' . $linkField . ' AND tier_price_' . $tierPriceExpressionNumber. '.all_groups = '. $allGroups .
             ' AND tier_price_' . $tierPriceExpressionNumber. '.customer_group_id = cg.customer_group_id AND tier_price_' . $tierPriceExpressionNumber. '.qty = 1' .
-            ' AND tier_price_' . $tierPriceExpressionNumber. '.website_id = ' . $website;
+            ' AND tier_price_' . $tierPriceExpressionNumber. '.website_id = ' . $website .
+            ' AND (NOT tier_price_' . $tierPriceExpressionNumber. ".is_special OR (({$specialFromExpression}) AND ({$specialToExpression})))";
         if ($isBaseCurrency) {
             $tierPriceCondition .= ' AND (tier_price_' . $tierPriceExpressionNumber. '.currency = "' . $currency . '" || tier_price_' . $tierPriceExpressionNumber. '.currency IS NULL)';
         } else {
