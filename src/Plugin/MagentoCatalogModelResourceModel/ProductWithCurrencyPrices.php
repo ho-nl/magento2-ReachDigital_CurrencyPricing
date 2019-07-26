@@ -63,7 +63,7 @@ class ProductWithCurrencyPrices
 
 
         $specialCurrencyPrices = $object->getData('special_price_currency');
-        $originalCurrencyPrices = $this->currencyPriceResourceModel->loadPriceData($object->getId(), 'special_price');
+        $originalCurrencyPrices = $this->currencyPriceResourceModel->loadPriceData($object->getId(), 'special');
         if ($specialCurrencyPrices !== null) {
             foreach ($specialCurrencyPrices as $currency => $currencyPrice) {
                 $original = null;
