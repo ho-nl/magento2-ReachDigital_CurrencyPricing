@@ -164,6 +164,8 @@ class BaseFinalPriceWithCurrency
         $this->joinAttributeProcessor->process($select, 'status', Status::STATUS_ENABLED);
 
         $price = $this->joinAttributeProcessor->process($select, 'price');
+        $price = 'IF(cp.price IS NULL OR cp.price = 0, ' . $price . ', cp.price)';
+
         $specialPrice = $this->joinAttributeProcessor->process($select, 'special_price');
         $specialFrom = $this->joinAttributeProcessor->process($select, 'special_from_date');
         $specialTo = $this->joinAttributeProcessor->process($select, 'special_to_date');
@@ -213,8 +215,6 @@ class BaseFinalPriceWithCurrency
             $specialPriceExpr,
             $tierPriceExpr,
         ]);
-
-        $price = 'IF(cp.price IS NULL OR cp.price = 0, ' . $price . ', cp.price)';
 
 
         $select->columns(
@@ -284,10 +284,10 @@ class BaseFinalPriceWithCurrency
     /**
      * Get total tier price expression
      *
-     * @param \Zend_Db_Expr $priceExpression
+     * @param string $priceExpression
      * @return \Zend_Db_Expr
      */
-    private function getTotalTierPriceExpression(\Zend_Db_Expr $priceExpression)
+    private function getTotalTierPriceExpression(string $priceExpression)
     {
         $maxUnsignedBigint = '~0';
 
@@ -327,10 +327,10 @@ class BaseFinalPriceWithCurrency
      * Get tier price expression for table
      *
      * @param string $tableAlias
-     * @param \Zend_Db_Expr $priceExpression
+     * @param string $priceExpression
      * @return \Zend_Db_Expr
      */
-    private function getTierPriceExpressionForTable($tableAlias, \Zend_Db_Expr $priceExpression): \Zend_Db_Expr
+    private function getTierPriceExpressionForTable($tableAlias, string $priceExpression): \Zend_Db_Expr
     {
         return $this->getConnection()->getCheckSql(
             sprintf('%s.value = 0', $tableAlias),
