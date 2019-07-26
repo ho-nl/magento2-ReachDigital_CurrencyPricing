@@ -10,7 +10,7 @@ use Magento\Framework\DB\Sql\ColumnValueExpression;
 use Magento\Framework\Indexer\Dimension;
 use Magento\Store\Model\Indexer\WebsiteDimensionProvider;
 use Magento\Catalog\Model\ResourceModel\Product\Indexer\Price\Query\JoinAttributeProcessor;
-
+use ReachDigital\CurrencyPricing\Model\RealBaseCurrency\RealBaseCurrency;
 
 /**
  * Variant of Magento\Catalog\Model\ResourceModel\Product\Indexer\Price\Query\BaseFinalPrice but considers currency for indexing.
@@ -64,6 +64,11 @@ class BaseFinalPriceWithCurrency
     private $metadataPool;
 
     /**
+     * @var RealBaseCurrency
+     */
+    private $realBaseCurrency;
+
+    /**
      * @param \Magento\Framework\App\ResourceConnection $resource
      * @param JoinAttributeProcessor $joinAttributeProcessor
      * @param \Magento\Framework\Module\Manager $moduleManager
@@ -77,6 +82,7 @@ class BaseFinalPriceWithCurrency
         \Magento\Framework\Module\Manager $moduleManager,
         \Magento\Framework\Event\ManagerInterface $eventManager,
         \Magento\Framework\EntityManager\MetadataPool $metadataPool,
+        RealBaseCurrency $realBaseCurrency,
         $connectionName = 'indexer'
     ) {
         $this->resource = $resource;
@@ -85,6 +91,7 @@ class BaseFinalPriceWithCurrency
         $this->moduleManager = $moduleManager;
         $this->eventManager = $eventManager;
         $this->metadataPool = $metadataPool;
+        $this->realBaseCurrency = $realBaseCurrency;
     }
 
     /**
@@ -101,6 +108,8 @@ class BaseFinalPriceWithCurrency
      */
     public function getQuery(array $dimensions, string $productType, string $currency, bool $isBaseCurrency, array $entityIds = []): Select
     {
+        $currencyRate = $this->realBaseCurrency->getRealBaseCurrency()->getRate($currency);
+
         $connection = $this->getConnection();
         $metadata = $this->metadataPool->getMetadata(\Magento\Catalog\Api\Data\ProductInterface::class);
         $linkField = $metadata->getLinkField();
@@ -164,14 +173,23 @@ class BaseFinalPriceWithCurrency
         $this->joinAttributeProcessor->process($select, 'status', Status::STATUS_ENABLED);
 
         $price = $this->joinAttributeProcessor->process($select, 'price');
-        $price = 'IF(cp.price IS NULL OR cp.price = 0, ' . $price . ', cp.price)';
+        if ($isBaseCurrency) {
+            $price = 'IF(cp.price IS NULL OR cp.price = 0, ' . $price . ', cp.price)';
+        } else {
+            $price = 'IF(cp.price IS NULL OR cp.price = 0, ' . $price . ' * ' . $currencyRate . ', cp.price)';
+        }
+
 
         $specialPrice = $this->joinAttributeProcessor->process($select, 'special_price');
         $specialFrom = $this->joinAttributeProcessor->process($select, 'special_from_date');
         $specialTo = $this->joinAttributeProcessor->process($select, 'special_to_date');
         $currentDate = 'cwd.website_date';
 
-        $specialPrice = 'IF(scp.price IS NULL OR scp.price = 0, ' . $specialPrice . ', scp.price)';
+        if ($isBaseCurrency) {
+            $specialPrice = 'IF(scp.price IS NULL OR scp.price = 0, ' . $specialPrice . ', scp.price)';
+        } else {
+            $specialPrice = 'IF(scp.price IS NULL OR scp.price = 0, ' . $specialPrice . ' * ' . $currencyRate . ', scp.price)';
+        }
 
         $maxUnsignedBigint = '~0';
         $specialFromDate = $connection->getDatePartSql($specialFrom);
