@@ -132,6 +132,12 @@ class BaseFinalPriceWithCurrency
             ' cp.type = "price" AND cp.currency = "' . $currency . '"',
             []
         )->joinLeft(
+        // Get the special currency price.
+            ['scp' => $this->getTable('catalog_product_entity_currency_price')],
+            'scp.entity_id = e.entity_id AND' .
+            ' scp.type = "special" AND scp.currency = "' . $currency . '"',
+            []
+        )->joinLeft(
             // we need this only for BCC in case someone expects table `tp` to be present in query
             ['tp' => $this->getTable('catalog_product_index_tier_price')],
             'tp.entity_id = e.entity_id AND' .
@@ -183,6 +189,8 @@ class BaseFinalPriceWithCurrency
         $specialFrom = $this->joinAttributeProcessor->process($select, 'special_from_date');
         $specialTo = $this->joinAttributeProcessor->process($select, 'special_to_date');
         $currentDate = 'cwd.website_date';
+
+        $specialPrice = 'IF(scp.price IS NULL OR scp.price = 0, ' . $specialPrice . ', scp.price)';
 
         $maxUnsignedBigint = '~0';
         $specialFromDate = $connection->getDatePartSql($specialFrom);
