@@ -9,6 +9,10 @@
     <preference for="Magento\Catalog\Model\ResourceModel\Product\Attribute\Backend\Tierprice" type="ReachDigital\CurrencyPricing\Model\ResourceModel\Product\Attribute\Backend\TierpriceWithCurrency"/>
     <preference for="Magento\Catalog\Model\Product\Attribute\Backend\TierPrice\UpdateHandler" type="ReachDigital\CurrencyPricing\Model\Product\Attribute\Backend\TierPrice\UpdateHandler"/>
     <preference for="Magento\Catalog\Model\Product\Attribute\Backend\TierPrice\SaveHandler" type="ReachDigital\CurrencyPricing\Model\Product\Attribute\Backend\TierPrice\SaveHandler"/>
+    <preference for="Magento\Downloadable\Model\ResourceModel\Indexer\Price" type="ReachDigital\CurrencyPricing\Model\ResourceModel\Indexer\PriceIndexerWithCurrency"/>
+    <preference for="Magento\Catalog\Model\ResourceModel\Product\Indexer\Price\IndexTableStructure" type="ReachDigital\CurrencyPricing\Model\ResourceModel\Product\Indexer\Price\IndexTableStructureWithCurrency"/>
+    <preference for="Magento\Catalog\Pricing\Price\TierPrice" type="ReachDigital\CurrencyPricing\Pricing\Price\TierPriceWithCurrency"/>
+    <preference for="Magento\Catalog\Model\ResourceModel\Product\Collection" type="ReachDigital\CurrencyPricing\Model\ResourceModel\Product\CollectionWithCurrency"/>
     <type name="Magento\Store\Model\Store">
         <plugin name="ReplaceBaseCurrencyWithCurrenctCurrency" type="ReachDigital\CurrencyPricing\Plugin\MagentoStoreModel\ReplaceBaseCurrencyWithCurrentCurrency" sortOrder="1" />
     </type>
@@ -17,5 +21,11 @@
     </type>
     <type name="Magento\Catalog\Model\ResourceModel\Product">
         <plugin name="ProductWithCurrencyPrices" type="ReachDigital\CurrencyPricing\Plugin\MagentoCatalogModelResourceModel\ProductWithCurrencyPrices" sortOrder="1" />
+    </type>
+    <type name="Magento\Catalog\Model\ResourceModel\Product\Indexer\Price\SimpleProductPrice">
+        <plugin name="SimpleProductPriceIndexerWithCurrency" type="ReachDigital\CurrencyPricing\Plugin\Magento\Catalog\Model\ResourceModel\Product\Indexer\Price\SimpleProductPriceWithCurrency" sortOrder="1" />
+    </type>
+    <type name="Magento\ConfigurableProduct\Model\ResourceModel\Product\Indexer\Price\Configurable">
+        <plugin name="ConfigurableProductPriceIndexerWithCurrency" type="ReachDigital\CurrencyPricing\Plugin\Magento\ConfigurableProduct\Model\ResourceModel\Product\Indexer\Price\ConfigurableWithCurrency" sortOrder="1" />
     </type>
 </config>
