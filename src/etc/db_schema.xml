@@ -5,6 +5,7 @@
     <table name="catalog_product_entity_tier_price" resource="default" engine="innodb"
            comment="Catalog Product Tier Price Attribute Backend Table">
         <column xsi:type="varchar" name="currency" comment="Currency for the price" nullable="true" length="3"/>
+        <column xsi:type="boolean" name="is_special" comment="False if this is a regular price, true of this is a special price" nullable="false" default="false"/>
         <constraint xsi:type="unique" referenceId="UNQ_E8AB433B9ACB00343ABB312AD2FAB087">
             <column name="entity_id"/>
             <column name="all_groups"/>
@@ -12,6 +13,7 @@
             <column name="qty"/>
             <column name="website_id"/>
             <column name="currency"/>
+            <column name="is_special"/>
         </constraint>
     </table>
 

@@ -63,6 +63,11 @@ class CurrencyPricingPrice
     private $currencyPriceResourceModel;
 
     /**
+     * @var \Magento\Framework\Stdlib\DateTime\TimezoneInterface
+     */
+    private $localeDate;
+
+    /**
      * CurrencyPricingPrice constructor.
      *
      * @param GroupManagementInterface                                   $groupManagement
@@ -83,6 +88,7 @@ class CurrencyPricingPrice
         ScopeConfigInterface $config,
         ProductTierPriceInterfaceFactory $tierPriceFactory,
         \ReachDigital\CurrencyPricing\Model\ResourceModel\CurrencyPrice $currencyPriceResourceModel,
+        \Magento\Framework\Stdlib\DateTime\TimezoneInterface $localeDate,
         ProductTierPriceExtensionFactory $tierPriceExtensionFactory = null
     )
     {
@@ -96,6 +102,7 @@ class CurrencyPricingPrice
         $this->tierPriceExtensionFactory = $tierPriceExtensionFactory ?: ObjectManager::getInstance()
             ->get(ProductTierPriceExtensionFactory::class);
         $this->currencyPriceResourceModel= $currencyPriceResourceModel;
+        $this->localeDate = $localeDate;
     }
 
     public function aroundGetPrice(\Magento\Catalog\Model\Product\Type\Price $subject, \Closure $proceed, Product $product) {
@@ -140,6 +147,7 @@ class CurrencyPricingPrice
     public function aroundGetBasePrice(Price $subject, \Closure $proceed, Product $product, $qty = null) {
         $currencyRate = $this->realBaseCurrency->getRealCurrentCurrencyRate();
         $convertedPrice = $product->getPrice();
+
         $tierPrice = $this->_applyTierPrice($product, $qty, $convertedPrice);
         $specialPrice = $this->_applySpecialPrice($subject, $product, $convertedPrice, $currencyRate);
         return min(
@@ -265,6 +273,8 @@ class CurrencyPricingPrice
      */
     public function aroundGetTierPrice(Price $subject, \Closure $proceed, $qty, Product $product) {
 
+        $specialPriceActive = $this->localeDate->isScopeDateInInterval($product->getStore(), $product->getSpecialFromDate(), $product->getSpecialToDate());
+
         $allGroupsId = $this->getAllCustomerGroupsId();
 
         $prices = $this->getExistingPrices($product);
@@ -308,7 +318,7 @@ class CurrencyPricingPrice
                     // found tier qty is same as current tier qty but current tier group is ALL_GROUPS
                     continue;
                 }
-                if (!$this->isTierPriceAllowed($price)) {
+                if (!$this->isTierPriceAllowed($price, $specialPriceActive)) {
                     continue;
                 }
                 if ($price['website_price'] < $prevPrice) {
@@ -449,12 +459,17 @@ class CurrencyPricingPrice
 
     /**
      * Determines whether the given tierPrice is allowed to be used given the users settings etc..
+     *
      * @param $price
+     * @param $isSpecialPriceActive
      *
      * @return bool
      */
-    public function isTierPriceAllowed($price) :bool
+    public function isTierPriceAllowed($price, $isSpecialPriceActive) :bool
     {
+        if (!$isSpecialPriceActive && isset($price['is_special']) && $price['is_special'] === '1') {
+            return false;
+        }
         $currenctCurrencyCode = $this->store->getCurrentCurrencyCode();
         if (!isset($price['currency']) || $price['currency'] === null) {
             $realBaseCurrencyCode = $this->realBaseCurrency->getRealBaseCurrencyCode();
