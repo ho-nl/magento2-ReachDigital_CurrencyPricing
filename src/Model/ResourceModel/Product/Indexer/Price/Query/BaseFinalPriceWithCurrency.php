@@ -126,7 +126,13 @@ class BaseFinalPriceWithCurrency
             'pw.website_id = cwd.website_id',
             []
         )->joinLeft(
-        // we need this only for BCC in case someone expects table `tp` to be present in query
+        // Get the currency price.
+            ['cp' => $this->getTable('catalog_product_entity_currency_price')],
+            'cp.entity_id = e.entity_id AND' .
+            ' cp.type = "price" AND cp.currency = "' . $currency . '"',
+            []
+        )->joinLeft(
+            // we need this only for BCC in case someone expects table `tp` to be present in query
             ['tp' => $this->getTable('catalog_product_index_tier_price')],
             'tp.entity_id = e.entity_id AND' .
             ' tp.customer_group_id = cg.customer_group_id AND tp.website_id = pw.website_id',
@@ -195,6 +201,9 @@ class BaseFinalPriceWithCurrency
             $specialPriceExpr,
             $tierPriceExpr,
         ]);
+
+        $price = 'IF(cp.price IS NULL OR cp.price = 0, ' . $price . ', cp.price)';
+
 
         $select->columns(
             [
