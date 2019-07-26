@@ -31,4 +31,7 @@
     <type name="Magento\GroupedProduct\Model\ResourceModel\Product\Indexer\Price\Grouped">
         <plugin name="GroupedProductPriceIndexerWithCurrency" type="ReachDigital\CurrencyPricing\Plugin\Magento\GroupedProduct\Model\ResourceModel\Product\Indexer\Price\GroupedWithCurrency" sortOrder="1" />
     </type>
+    <type name="Magento\Bundle\Model\ResourceModel\Indexer\Price">
+        <plugin name="BundleProductPriceIndexerWithCurrency" type="ReachDigital\CurrencyPricing\Plugin\Magento\Bundle\Model\ResourceModel\Indexer\BundlePriceWithCurrency" sortOrder="1" />
+    </type>
 </config>
