@@ -10,7 +10,7 @@ use Magento\Framework\DB\Sql\ColumnValueExpression;
 use Magento\Framework\Indexer\Dimension;
 use Magento\Store\Model\Indexer\WebsiteDimensionProvider;
 use Magento\Catalog\Model\ResourceModel\Product\Indexer\Price\Query\JoinAttributeProcessor;
-
+use ReachDigital\CurrencyPricing\Model\RealBaseCurrency\RealBaseCurrency;
 
 /**
  * Variant of Magento\Catalog\Model\ResourceModel\Product\Indexer\Price\Query\BaseFinalPrice but considers currency for indexing.
@@ -64,6 +64,11 @@ class BaseFinalPriceWithCurrency
     private $metadataPool;
 
     /**
+     * @var RealBaseCurrency
+     */
+    private $realBaseCurrency;
+
+    /**
      * @param \Magento\Framework\App\ResourceConnection $resource
      * @param JoinAttributeProcessor $joinAttributeProcessor
      * @param \Magento\Framework\Module\Manager $moduleManager
@@ -77,6 +82,7 @@ class BaseFinalPriceWithCurrency
         \Magento\Framework\Module\Manager $moduleManager,
         \Magento\Framework\Event\ManagerInterface $eventManager,
         \Magento\Framework\EntityManager\MetadataPool $metadataPool,
+        RealBaseCurrency $realBaseCurrency,
         $connectionName = 'indexer'
     ) {
         $this->resource = $resource;
@@ -85,6 +91,7 @@ class BaseFinalPriceWithCurrency
         $this->moduleManager = $moduleManager;
         $this->eventManager = $eventManager;
         $this->metadataPool = $metadataPool;
+        $this->realBaseCurrency = $realBaseCurrency;
     }
 
     /**
@@ -101,6 +108,8 @@ class BaseFinalPriceWithCurrency
      */
     public function getQuery(array $dimensions, string $productType, string $currency, bool $isBaseCurrency, array $entityIds = []): Select
     {
+        $currencyRate = $this->realBaseCurrency->getRealBaseCurrency()->getRate($currency);
+
         $connection = $this->getConnection();
         $metadata = $this->metadataPool->getMetadata(\Magento\Catalog\Api\Data\ProductInterface::class);
         $linkField = $metadata->getLinkField();
@@ -126,31 +135,22 @@ class BaseFinalPriceWithCurrency
             'pw.website_id = cwd.website_id',
             []
         )->joinLeft(
-        // we need this only for BCC in case someone expects table `tp` to be present in query
+        // Get the currency price.
+            ['cp' => $this->getTable('catalog_product_entity_currency_price')],
+            'cp.entity_id = e.entity_id AND' .
+            ' cp.type = "price" AND cp.currency = "' . $currency . '"',
+            []
+        )->joinLeft(
+        // Get the special currency price.
+            ['scp' => $this->getTable('catalog_product_entity_currency_price')],
+            'scp.entity_id = e.entity_id AND' .
+            ' scp.type = "special" AND scp.currency = "' . $currency . '"',
+            []
+        )->joinLeft(
+            // we need this only for BCC in case someone expects table `tp` to be present in query
             ['tp' => $this->getTable('catalog_product_index_tier_price')],
             'tp.entity_id = e.entity_id AND' .
             ' tp.customer_group_id = cg.customer_group_id AND tp.website_id = pw.website_id',
-            []
-        )->joinLeft(
-        // calculate tier price specified as Website = `All Websites` and Customer Group = `Specific Customer Group`
-            ['tier_price_1' => $this->getTable('catalog_product_entity_tier_price')],
-            $this->getTierPriceCondition($linkField, '1', '0', '0', $currency, $isBaseCurrency),
-            []
-        )->joinLeft(
-        // calculate tier price specified as Website = `Specific Website`
-        //and Customer Group = `Specific Customer Group`
-            ['tier_price_2' => $this->getTable('catalog_product_entity_tier_price')],
-            $this->getTierPriceCondition($linkField, '2', '0', 'pw.website_id', $currency, $isBaseCurrency),
-            []
-        )->joinLeft(
-        // calculate tier price specified as Website = `All Websites` and Customer Group = `ALL GROUPS`
-            ['tier_price_3' => $this->getTable('catalog_product_entity_tier_price')],
-            $this->getTierPriceCondition($linkField, '3', '1', '0', $currency, $isBaseCurrency),
-            []
-        )->joinLeft(
-        // calculate tier price specified as Website = `Specific Website` and Customer Group = `ALL GROUPS`
-            ['tier_price_4' => $this->getTable('catalog_product_entity_tier_price')],
-            $this->getTierPriceCondition($linkField, '4', '1', 'pw.website_id', $currency, $isBaseCurrency),
             []
         );
 
@@ -173,10 +173,23 @@ class BaseFinalPriceWithCurrency
         $this->joinAttributeProcessor->process($select, 'status', Status::STATUS_ENABLED);
 
         $price = $this->joinAttributeProcessor->process($select, 'price');
+        if ($isBaseCurrency) {
+            $price = 'IF(cp.price IS NULL OR cp.price = 0, ' . $price . ', cp.price)';
+        } else {
+            $price = 'IF(cp.price IS NULL OR cp.price = 0, ' . $price . ' * ' . $currencyRate . ', cp.price)';
+        }
+
+
         $specialPrice = $this->joinAttributeProcessor->process($select, 'special_price');
         $specialFrom = $this->joinAttributeProcessor->process($select, 'special_from_date');
         $specialTo = $this->joinAttributeProcessor->process($select, 'special_to_date');
         $currentDate = 'cwd.website_date';
+
+        if ($isBaseCurrency) {
+            $specialPrice = 'IF(scp.price IS NULL OR scp.price = 0, ' . $specialPrice . ', scp.price)';
+        } else {
+            $specialPrice = 'IF(scp.price IS NULL OR scp.price = 0, ' . $specialPrice . ' * ' . $currencyRate . ', scp.price)';
+        }
 
         $maxUnsignedBigint = '~0';
         $specialFromDate = $connection->getDatePartSql($specialFrom);
@@ -188,6 +201,31 @@ class BaseFinalPriceWithCurrency
             $specialPrice,
             $maxUnsignedBigint
         );
+
+
+        $select->joinLeft(
+        // calculate tier price specified as Website = `All Websites` and Customer Group = `Specific Customer Group`
+            ['tier_price_1' => $this->getTable('catalog_product_entity_tier_price')],
+            $this->getTierPriceCondition($linkField, '1', '0', '0', $currency, $isBaseCurrency, $specialFromExpr, $specialToExpr),
+            []
+        )->joinLeft(
+        // calculate tier price specified as Website = `Specific Website`
+        //and Customer Group = `Specific Customer Group`
+            ['tier_price_2' => $this->getTable('catalog_product_entity_tier_price')],
+            $this->getTierPriceCondition($linkField, '2', '0', 'pw.website_id', $currency, $isBaseCurrency, $specialFromExpr, $specialToExpr),
+            []
+        )->joinLeft(
+        // calculate tier price specified as Website = `All Websites` and Customer Group = `ALL GROUPS`
+            ['tier_price_3' => $this->getTable('catalog_product_entity_tier_price')],
+            $this->getTierPriceCondition($linkField, '3', '1', '0', $currency, $isBaseCurrency, $specialFromExpr, $specialToExpr),
+            []
+        )->joinLeft(
+        // calculate tier price specified as Website = `Specific Website` and Customer Group = `ALL GROUPS`
+            ['tier_price_4' => $this->getTable('catalog_product_entity_tier_price')],
+            $this->getTierPriceCondition($linkField, '4', '1', 'pw.website_id', $currency, $isBaseCurrency, $specialFromExpr, $specialToExpr),
+            []
+        );
+
         $tierPrice = $this->getTotalTierPriceExpression($price);
         $tierPriceExpr = $connection->getIfNullSql($tierPrice, $maxUnsignedBigint);
         $finalPrice = $connection->getLeastSql([
@@ -195,6 +233,7 @@ class BaseFinalPriceWithCurrency
             $specialPriceExpr,
             $tierPriceExpr,
         ]);
+
 
         $select->columns(
             [
@@ -245,11 +284,12 @@ class BaseFinalPriceWithCurrency
      *
      * @return string
      */
-    private function getTierPriceCondition($linkField, $tierPriceExpressionNumber, $allGroups, $website, $currency, $isBaseCurrency): string
+    private function getTierPriceCondition($linkField, $tierPriceExpressionNumber, $allGroups, $website, $currency, $isBaseCurrency, $specialFromExpression, $specialToExpression): string
     {
         $tierPriceCondition = 'tier_price_' . $tierPriceExpressionNumber. '.' . $linkField . ' = e.' . $linkField . ' AND tier_price_' . $tierPriceExpressionNumber. '.all_groups = '. $allGroups .
             ' AND tier_price_' . $tierPriceExpressionNumber. '.customer_group_id = cg.customer_group_id AND tier_price_' . $tierPriceExpressionNumber. '.qty = 1' .
-            ' AND tier_price_' . $tierPriceExpressionNumber. '.website_id = ' . $website;
+            ' AND tier_price_' . $tierPriceExpressionNumber. '.website_id = ' . $website .
+            ' AND (NOT tier_price_' . $tierPriceExpressionNumber. ".is_special OR (({$specialFromExpression}) AND ({$specialToExpression})))";
         if ($isBaseCurrency) {
             $tierPriceCondition .= ' AND (tier_price_' . $tierPriceExpressionNumber. '.currency = "' . $currency . '" || tier_price_' . $tierPriceExpressionNumber. '.currency IS NULL)';
         } else {
@@ -262,10 +302,10 @@ class BaseFinalPriceWithCurrency
     /**
      * Get total tier price expression
      *
-     * @param \Zend_Db_Expr $priceExpression
+     * @param string $priceExpression
      * @return \Zend_Db_Expr
      */
-    private function getTotalTierPriceExpression(\Zend_Db_Expr $priceExpression)
+    private function getTotalTierPriceExpression(string $priceExpression)
     {
         $maxUnsignedBigint = '~0';
 
@@ -305,10 +345,10 @@ class BaseFinalPriceWithCurrency
      * Get tier price expression for table
      *
      * @param string $tableAlias
-     * @param \Zend_Db_Expr $priceExpression
+     * @param string $priceExpression
      * @return \Zend_Db_Expr
      */
-    private function getTierPriceExpressionForTable($tableAlias, \Zend_Db_Expr $priceExpression): \Zend_Db_Expr
+    private function getTierPriceExpressionForTable($tableAlias, string $priceExpression): \Zend_Db_Expr
     {
         return $this->getConnection()->getCheckSql(
             sprintf('%s.value = 0', $tableAlias),

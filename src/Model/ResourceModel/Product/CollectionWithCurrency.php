@@ -12,6 +12,7 @@ use Magento\Framework\EntityManager\MetadataPool;
 use Magento\Framework\Indexer\DimensionFactory;
 use Magento\Store\Model\Indexer\WebsiteDimensionProvider;
 use Magento\Customer\Model\Indexer\CustomerGroupDimensionProvider;
+use Magento\Framework\App\ObjectManager;
 
 class CollectionWithCurrency extends Collection
 {
@@ -64,8 +65,9 @@ class CollectionWithCurrency extends Collection
             $dateTime, $groupManagement, $connection, $productLimitationFactory, $metadataPool, $tableMaintainer,
             $priceTableResolver, $dimensionFactory);
         $this->storeManager = $storeManager;
-        $this->priceTableResolver = $priceTableResolver;
-        $this->dimensionFactory = $dimensionFactory;
+        $this->dimensionFactory = $dimensionFactory
+            ?: ObjectManager::getInstance()->get(DimensionFactory::class);
+        $this->priceTableResolver = $priceTableResolver ?: ObjectManager::getInstance()->get(PriceTableResolver::class);
     }
 
     /**
