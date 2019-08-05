@@ -9,6 +9,12 @@ Currency prices can be set for the following price types:
 
 Additionally tier prices get an 'Is special price' option. When checked for a tier price, it will be used as if it is a special price in that it will only be valid in the special price date interval.
 
+This is what the currency prices look like for the base price:
+![Currency prices for base price](CurrencyForBasePrice.png)
+
+In the Advanced pricing popup you can specify currency prices for the special price and the tier prices:
+![Currency prices for special prices and tier prices](CurrencyForTierprices.png)
+
 ### Installation
 Run `composer require reach-digital/magento2-currencypricing` to install the module.
 
