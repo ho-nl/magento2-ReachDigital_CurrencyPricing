@@ -57,40 +57,44 @@ class AdvancedPricingCurrency extends AbstractModifier
         foreach ($this->currencyModel->getConfigAllowCurrencies() as $value) {
             $currencyOptions []= ['label' => $value, 'value' => $value];
         }
-        $meta['advanced_pricing_modal']['children']['advanced-pricing']['children']['tier_price']['children']['record']['children']['currency'] = [
-            'arguments' => [
-                'data' => [
-                    'options' => $currencyOptions,
-                    'config' => [
-                        'dataType' => 'text',
-                        'formElement'=> Select::NAME,
-                        'componentType' => 'field',
-                        'label' => __('Currency'),
-                        'dataScope' => 'currency',
-                        'sortOrder' => 35
+        if (isset($meta['advanced_pricing_modal']['children']['advanced-pricing']['children']['tier_price'])) {
+            $meta['advanced_pricing_modal']['children']['advanced-pricing']['children']['tier_price']['children']['record']['children']['currency']
+                = [
+                'arguments' => [
+                    'data' => [
+                        'options' => $currencyOptions,
+                        'config' => [
+                            'dataType' => 'text',
+                            'formElement' => Select::NAME,
+                            'componentType' => 'field',
+                            'label' => __('Currency'),
+                            'dataScope' => 'currency',
+                            'sortOrder' => 35
+                        ]
                     ]
                 ]
-            ]
-        ];
+            ];
 
-        $meta['advanced_pricing_modal']['children']['advanced-pricing']['children']['tier_price']['children']['record']['children']['is_special'] = [
-            'arguments' => [
-                'data' => [
-                    'config' => [
-                        'dataType' => Number::NAME,
-                        'formElement' => Checkbox::NAME,
-                        'componentType' => 'field',
-                        'label' => __('Is special price'),
-                        'dataScope' => 'is_special',
-                        'sortOrder' => 45,
-                        'valueMap' => [
-                            'true' => '1',
-                            'false' => '0',
-                        ],
+            $meta['advanced_pricing_modal']['children']['advanced-pricing']['children']['tier_price']['children']['record']['children']['is_special']
+                = [
+                'arguments' => [
+                    'data' => [
+                        'config' => [
+                            'dataType' => Number::NAME,
+                            'formElement' => Checkbox::NAME,
+                            'componentType' => 'field',
+                            'label' => __('Is special price'),
+                            'dataScope' => 'is_special',
+                            'sortOrder' => 45,
+                            'valueMap' => [
+                                'true' => '1',
+                                'false' => '0',
+                            ],
+                        ]
                     ]
                 ]
-            ]
-        ];
+            ];
+        }
 
         $specialPriceCurrencies = [];
         foreach ($this->currencyModel->getConfigAllowCurrencies() as $value) {
