@@ -23,7 +23,7 @@ The rates are used as a fallback mechanism in case no price has been set for a p
 If the rate is not set for the currency the base currency will be used instead, even if the price has been set for a product for the current currency.
 
 ### Limitations
-The module currently only works for simple products.
+The module currently only works for simple products and virtual products.
 For other product types, the price indexer does not work correctly, so wrong prices could be displayed in the catalog.
 
 This module conflicts with the [Amasty_Shopby](https://amasty.com/shop-by-brand-for-magento-2.html) module, causing an error on the catalog page.
