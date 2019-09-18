@@ -14,6 +14,7 @@ use ReachDigital\CurrencyPricing\Model\RealBaseCurrency\RealBaseCurrency;
 use ReachDigital\CurrencyPricing\Model\ResourceModel\Product\Indexer\Price\Query\BaseFinalPriceWithCurrency;
 use Magento\Directory\Model\Currency;
 use Magento\Downloadable\Model\Product\Type;
+use ReflectionClass;
 
 class SimpleProductPriceWithCurrency
 {
@@ -97,16 +98,23 @@ class SimpleProductPriceWithCurrency
         $currencies = $this->currencyModel->getConfigAllowCurrencies();
         $baseCurrency = $this->realBaseCurrency->getRealBaseCurrencyCode();
 
+        // Use reflection to get around productType property being private in SimpleProductPrice.
+        // This is necessary since we do not have any other way to determine if this is a plugin for the SimpleProductPrice type or the VirtialProductPrice virtual type.
+        $reflectionClass = new ReflectionClass(SimpleProductPrice::class);
+        $reflectionProperty = $reflectionClass->getProperty('productType');
+        $reflectionProperty->setAccessible(true);
+        $productType = $reflectionProperty->getValue($simpleProductPrice);
+
         foreach ($currencies as $currency) {
-            $this->updatePriceIndexerForCurrency($dimensions, $entityIds, $temporaryPriceTable, $currency, $currency === $baseCurrency);
+            $this->updatePriceIndexerForCurrency($dimensions, $entityIds, $temporaryPriceTable, $currency, $currency === $baseCurrency, $productType);
         }
 
         $this->basePriceModifier->modifyPrice($temporaryPriceTable, iterator_to_array($entityIds));
     }
 
-    private function updatePriceIndexerForCurrency(array $dimensions, \Traversable $entityIds, IndexTableStructure $temporaryPriceTable, string $currency, bool $isBaseCurrency): void
+    private function updatePriceIndexerForCurrency(array $dimensions, \Traversable $entityIds, IndexTableStructure $temporaryPriceTable, string $currency, bool $isBaseCurrency, string $productType): void
     {
-        $select = $this->baseFinalPriceWithCurrency->getQuery($dimensions, $this->productType, $currency, $isBaseCurrency, iterator_to_array($entityIds));
+        $select = $this->baseFinalPriceWithCurrency->getQuery($dimensions, $productType, $currency, $isBaseCurrency, iterator_to_array($entityIds));
         $query = $select->insertFromSelect($temporaryPriceTable->getTableName(), [], false);
         $this->tableMaintainer->getConnection()->query($query);
     }
