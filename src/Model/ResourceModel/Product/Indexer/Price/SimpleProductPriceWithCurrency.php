@@ -1,42 +1,26 @@
 <?php
 declare(strict_types=1);
 
-namespace ReachDigital\CurrencyPricing\Plugin\Magento\Catalog\Model\ResourceModel\Product\Indexer\Price;
-
+namespace ReachDigital\CurrencyPricing\Model\ResourceModel\Product\Indexer\Price;
 
 use Magento\Catalog\Model\Indexer\Product\Price\TableMaintainer;
 use Magento\Catalog\Model\ResourceModel\Product\Indexer\Price\BasePriceModifier;
-use Magento\Framework\Indexer\DimensionalIndexerInterface;
-use Magento\Catalog\Model\ResourceModel\Product\Indexer\Price\SimpleProductPrice;
 use Magento\Catalog\Model\ResourceModel\Product\Indexer\Price\IndexTableStructureFactory;
 use Magento\Catalog\Model\ResourceModel\Product\Indexer\Price\IndexTableStructure;
+use Magento\Catalog\Model\ResourceModel\Product\Indexer\Price\Query\BaseFinalPrice;
+use Magento\Catalog\Model\ResourceModel\Product\Indexer\Price\SimpleProductPrice;
 use ReachDigital\CurrencyPricing\Model\RealBaseCurrency\RealBaseCurrency;
 use ReachDigital\CurrencyPricing\Model\ResourceModel\Product\Indexer\Price\Query\BaseFinalPriceWithCurrency;
 use Magento\Directory\Model\Currency;
-use Magento\Downloadable\Model\Product\Type;
 
-class SimpleProductPriceWithCurrency
+class SimpleProductPriceWithCurrency extends SimpleProductPrice
 {
-
-    /**
-     * @var IndexTableStructureFactory
-     */
-    private $indexTableStructureFactory;
+    private $productType;
 
     /**
      * @var TableMaintainer
      */
     private $tableMaintainer;
-
-    /**
-     * @var BasePriceModifier
-     */
-    private $basePriceModifier;
-
-    /**
-     * @var string
-     */
-    private $productType;
 
     /**
      * @var BaseFinalPriceWithCurrency
@@ -53,31 +37,42 @@ class SimpleProductPriceWithCurrency
      */
     private $realBaseCurrency;
 
+    /**
+     * @var BasePriceModifier
+     */
+    private $basePriceModifier;
+
+    /**
+     * @var IndexTableStructureFactory
+     */
+    private $indexTableStructureFactory;
+
     public function __construct(
-        BaseFinalPriceWithCurrency $baseFinalPriceWithCurrency,
+        BaseFinalPrice $baseFinalPrice,
         IndexTableStructureFactory $indexTableStructureFactory,
         TableMaintainer $tableMaintainer,
         BasePriceModifier $basePriceModifier,
+        BaseFinalPriceWithCurrency $baseFinalPriceWithCurrency,
         Currency $currencyModel,
         RealBaseCurrency $realBaseCurrency,
-        $productType = \Magento\Catalog\Model\Product\Type::TYPE_SIMPLE)
-    {
-        $this->indexTableStructureFactory = $indexTableStructureFactory;
-        $this->tableMaintainer = $tableMaintainer;
-        $this->basePriceModifier = $basePriceModifier;
+        string $productType = \Magento\Catalog\Model\Product\Type::TYPE_SIMPLE
+    ) {
+        parent::__construct($baseFinalPrice, $indexTableStructureFactory, $tableMaintainer, $basePriceModifier,
+            $productType);
         $this->productType = $productType;
+        $this->tableMaintainer = $tableMaintainer;
         $this->baseFinalPriceWithCurrency = $baseFinalPriceWithCurrency;
         $this->currencyModel = $currencyModel;
         $this->realBaseCurrency = $realBaseCurrency;
+        $this->basePriceModifier = $basePriceModifier;
+        $this->indexTableStructureFactory = $indexTableStructureFactory;
     }
 
     /**
-     * @param SimpleProductPrice $simpleProductPrice
-     * @param \Closure           $proceed
-     * @param array              $dimensions
-     * @param \Traversable       $entityIds
+     * @param array        $dimensions
+     * @param \Traversable $entityIds
      */
-    public function aroundExecuteByDimensions(SimpleProductPrice $simpleProductPrice, \Closure $proceed, array $dimensions, \Traversable $entityIds): void
+    public function executeByDimensions(array $dimensions, \Traversable $entityIds) :void
     {
         $this->tableMaintainer->createMainTmpTable($dimensions);
 
