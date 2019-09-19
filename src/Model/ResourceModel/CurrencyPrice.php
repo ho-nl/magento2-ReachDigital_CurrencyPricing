@@ -45,7 +45,7 @@ class CurrencyPrice extends \Magento\Framework\Model\ResourceModel\Db\AbstractDb
         ];
 
         $select = $this->getConnection()->select()
-            ->from('catalog_product_entity_currency_price', $columns);
+            ->from($this->getConnection()->getTableName('catalog_product_entity_currency_price'), $columns);
 
         return $select;
     }
