@@ -14,6 +14,7 @@
     <preference for="Magento\Catalog\Pricing\Price\TierPrice" type="ReachDigital\CurrencyPricing\Pricing\Price\TierPriceWithCurrency"/>
     <preference for="Magento\Catalog\Pricing\Price\SpecialPrice" type="ReachDigital\CurrencyPricing\Pricing\Price\SpecialPriceWithCurrency"/>
     <preference for="Magento\Catalog\Model\ResourceModel\Product\Collection" type="ReachDigital\CurrencyPricing\Model\ResourceModel\Product\CollectionWithCurrency"/>
+    <preference for="Magento\Catalog\Model\ResourceModel\Product\Indexer\Price\SimpleProductPrice" type="ReachDigital\CurrencyPricing\Model\ResourceModel\Product\Indexer\Price\SimpleProductPriceWithCurrency"/>
     <type name="Magento\Store\Model\Store">
         <plugin name="ReplaceBaseCurrencyWithCurrenctCurrency" type="ReachDigital\CurrencyPricing\Plugin\MagentoStoreModel\ReplaceBaseCurrencyWithCurrentCurrency" sortOrder="1" />
     </type>
@@ -22,9 +23,6 @@
     </type>
     <type name="Magento\Catalog\Model\ResourceModel\Product">
         <plugin name="ProductWithCurrencyPrices" type="ReachDigital\CurrencyPricing\Plugin\MagentoCatalogModelResourceModel\ProductWithCurrencyPrices" sortOrder="1" />
-    </type>
-    <type name="Magento\Catalog\Model\ResourceModel\Product\Indexer\Price\SimpleProductPrice">
-        <plugin name="SimpleProductPriceIndexerWithCurrency" type="ReachDigital\CurrencyPricing\Plugin\Magento\Catalog\Model\ResourceModel\Product\Indexer\Price\SimpleProductPriceWithCurrency" sortOrder="1" />
     </type>
     <type name="Magento\ConfigurableProduct\Model\ResourceModel\Product\Indexer\Price\Configurable">
         <plugin name="ConfigurableProductPriceIndexerWithCurrency" type="ReachDigital\CurrencyPricing\Plugin\Magento\ConfigurableProduct\Model\ResourceModel\Product\Indexer\Price\ConfigurableWithCurrency" sortOrder="1" />
@@ -35,4 +33,9 @@
     <type name="Magento\Bundle\Model\ResourceModel\Indexer\Price">
         <plugin name="BundleProductPriceIndexerWithCurrency" type="ReachDigital\CurrencyPricing\Plugin\Magento\Bundle\Model\ResourceModel\Indexer\BundlePriceWithCurrency" sortOrder="1" />
     </type>
+    <virtualType name="Magento\Catalog\Model\ResourceModel\Product\Indexer\Price\VirtualProductPrice" type="ReachDigital\CurrencyPricing\Model\ResourceModel\Product\Indexer\Price\SimpleProductPriceWithCurrency">
+        <arguments>
+            <argument name="productType" xsi:type="string">virtual</argument>
+        </arguments>
+    </virtualType>
 </config>
