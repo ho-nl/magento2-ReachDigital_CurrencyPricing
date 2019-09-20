@@ -67,11 +67,7 @@ class CurrencyPricingPriceTest extends TestCase
         $objectManager = Bootstrap::getObjectManager();
         /** @var ProductRepository $productRepository */
         $productRepository = $objectManager->create(ProductRepository::class);
-        try {
-            return $productRepository->get('fintest');
-        } catch (NoSuchEntityException $e) {
-            return null;
-        }
+        return $productRepository->get('fintest');
     }
 
     private function getStore() :Store
