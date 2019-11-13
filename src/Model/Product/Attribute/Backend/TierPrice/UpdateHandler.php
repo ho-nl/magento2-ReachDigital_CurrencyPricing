@@ -9,6 +9,8 @@ use Magento\Catalog\Api\ProductAttributeRepositoryInterface;
 use Magento\Customer\Api\GroupManagementInterface;
 use Magento\Framework\EntityManager\MetadataPool;
 use Magento\Catalog\Model\ResourceModel\Product\Attribute\Backend\Tierprice;
+use Magento\Framework\App\ObjectManager;
+use Magento\Framework\Locale\FormatInterface;
 
 class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\TierPrice\UpdateHandler
 {
@@ -33,6 +35,11 @@ class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\Tie
     private $tierPriceResource;
 
     /**
+     * @var FormatInterface
+     */
+    private $localeFormat;
+
+    /**
      * @param \Magento\Store\Model\StoreManagerInterface $storeManager
      * @param \Magento\Catalog\Api\ProductAttributeRepositoryInterface $attributeRepository
      * @param \Magento\Customer\Api\GroupManagementInterface $groupManagement
@@ -44,7 +51,8 @@ class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\Tie
         ProductAttributeRepositoryInterface $attributeRepository,
         GroupManagementInterface $groupManagement,
         MetadataPool $metadataPool,
-        Tierprice $tierPriceResource
+        Tierprice $tierPriceResource,
+        FormatInterface $localeFormat = null
     ) {
         parent::__construct($storeManager,
             $attributeRepository,
@@ -55,6 +63,7 @@ class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\Tie
         $this->attributeRepository = $attributeRepository;
         $this->metadataPoll = $metadataPool;
         $this->tierPriceResource = $tierPriceResource;
+        $this->localeFormat = $localeFormat ?: ObjectManager::getInstance()->get(FormatInterface::class);
     }
 
     /**
@@ -131,7 +140,9 @@ class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\Tie
     {
         $isChanged = false;
         foreach ($valuesToUpdate as $key => $value) {
-            if ((!empty($value['value']) && (float)$oldValues[$key]['price'] !== (float)$value['value'])
+            if ((!empty($value['value'])
+                && (float)$oldValues[$key]['price'] !== $this->localeFormat->getNumber($value['value'])
+                )
                 || $this->_valuesUpdated($valuesToUpdate, $oldValues)
                 || $this->getPercentage($oldValues[$key]) !== $this->getPercentage($value)
             ) {

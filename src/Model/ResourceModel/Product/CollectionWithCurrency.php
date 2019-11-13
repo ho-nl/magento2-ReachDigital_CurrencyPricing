@@ -145,8 +145,7 @@ class CollectionWithCurrency extends Collection
             }
             // Set additional field filters
             foreach ($this->_priceDataFieldFilters as $filterData) {
-                // phpcs:ignore Magento2.Functions.DiscouragedFunction
-                $select->where(call_user_func_array('sprintf', $filterData));
+                $select->where(sprintf(...$filterData));
             }
         } else {
             $fromPart['price_index']['joinCondition'] = $joinCond;
