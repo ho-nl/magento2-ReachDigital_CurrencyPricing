@@ -52,19 +52,18 @@ class CollectionWithCurrency extends Collection
         \Magento\Customer\Model\Session $customerSession,
         \Magento\Framework\Stdlib\DateTime $dateTime,
         GroupManagementInterface $groupManagement,
-        ?\Magento\Framework\DB\Adapter\AdapterInterface $connection = null,
-        ?ProductLimitationFactory $productLimitationFactory = null,
-        ?MetadataPool $metadataPool = null,
-        ?TableMaintainer $tableMaintainer = null,
-        ?PriceTableResolver $priceTableResolver = null,
-        ?DimensionFactory $dimensionFactory = null,
-        Category $categoryResourceModel = null
+        \Magento\Framework\DB\Adapter\AdapterInterface $connection = null,
+        ProductLimitationFactory $productLimitationFactory = null,
+        MetadataPool $metadataPool = null,
+        TableMaintainer $tableMaintainer = null,
+        PriceTableResolver $priceTableResolver = null,
+        DimensionFactory $dimensionFactory = null
     ) {
         parent::__construct($entityFactory, $logger, $fetchStrategy, $eventManager, $eavConfig, $resource,
             $eavEntityFactory, $resourceHelper, $universalFactory, $storeManager, $moduleManager,
             $catalogProductFlatState, $scopeConfig, $productOptionFactory, $catalogUrl, $localeDate, $customerSession,
             $dateTime, $groupManagement, $connection, $productLimitationFactory, $metadataPool, $tableMaintainer,
-            $priceTableResolver, $dimensionFactory, $categoryResourceModel);
+            $priceTableResolver, $dimensionFactory);
         $this->storeManager = $storeManager;
         $this->dimensionFactory = $dimensionFactory
             ?: ObjectManager::getInstance()->get(DimensionFactory::class);
