@@ -238,7 +238,7 @@ class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\Tie
      * @param array|null $origPrices
      * @return array
      */
-    private function prepareOldTierPriceToCompare($origPrices): array
+    private function prepareOldTierPriceToCompare(?array $origPrices): array
     {
         $old = [];
         if (is_array($origPrices)) {
@@ -259,7 +259,7 @@ class UpdateHandler extends \Magento\Catalog\Model\Product\Attribute\Backend\Tie
      * @return array
      * @throws \Magento\Framework\Exception\LocalizedException
      */
-    private function prepareNewDataForSave($priceRows, $isGlobal = true): array
+    private function prepareNewDataForSave(array $priceRows, bool $isGlobal = true): array
     {
         $new = [];
         $priceRows = array_filter($priceRows);

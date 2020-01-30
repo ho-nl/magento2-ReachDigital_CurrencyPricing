@@ -47,6 +47,10 @@ class TierpriceWithCurrency extends Tierprice
     }
 
     /**
+     * Update Price values in DB
+     *
+     * Updates price values in DB from array comparing to old values. Returns bool if updated
+     *
      * @param array $valuesToUpdate
      * @param array $oldValues
      * @return bool
