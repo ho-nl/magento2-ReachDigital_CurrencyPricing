@@ -32,6 +32,11 @@ class CollectionWithCurrency extends Collection
      */
     private $dimensionFactory;
 
+    /**
+     * @var Category
+     */
+    private $categoryResourceModel;
+
     public function __construct(
         \Magento\Framework\Data\Collection\EntityFactory $entityFactory,
         \Psr\Log\LoggerInterface $logger,
@@ -57,17 +62,20 @@ class CollectionWithCurrency extends Collection
         MetadataPool $metadataPool = null,
         TableMaintainer $tableMaintainer = null,
         PriceTableResolver $priceTableResolver = null,
-        DimensionFactory $dimensionFactory = null
+        DimensionFactory $dimensionFactory = null,
+        Category $categoryResourceModel = null
     ) {
         parent::__construct($entityFactory, $logger, $fetchStrategy, $eventManager, $eavConfig, $resource,
             $eavEntityFactory, $resourceHelper, $universalFactory, $storeManager, $moduleManager,
             $catalogProductFlatState, $scopeConfig, $productOptionFactory, $catalogUrl, $localeDate, $customerSession,
             $dateTime, $groupManagement, $connection, $productLimitationFactory, $metadataPool, $tableMaintainer,
-            $priceTableResolver, $dimensionFactory);
+            $priceTableResolver, $dimensionFactory, $categoryResourceModel);
         $this->storeManager = $storeManager;
         $this->dimensionFactory = $dimensionFactory
             ?: ObjectManager::getInstance()->get(DimensionFactory::class);
         $this->priceTableResolver = $priceTableResolver ?: ObjectManager::getInstance()->get(PriceTableResolver::class);
+        $this->categoryResourceModel = $categoryResourceModel ?: ObjectManager::getInstance()
+            ->get(Category::class);
     }
 
     /**
