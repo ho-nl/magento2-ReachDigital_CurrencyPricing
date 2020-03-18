@@ -114,7 +114,7 @@ class BaseFinalPriceWithCurrency
         $metadata = $this->metadataPool->getMetadata(\Magento\Catalog\Api\Data\ProductInterface::class);
         $linkField = $metadata->getLinkField();
 
-        $select = $connection->select()->from(
+        $select = $connection->select()->distinct()->from(
             ['e' => $this->getTable('catalog_product_entity')],
             ['entity_id']
         )->joinInner(
