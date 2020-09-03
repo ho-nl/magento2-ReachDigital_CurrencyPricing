@@ -33,6 +33,10 @@ class CurrencyPricingPriceTest extends TestCase
     {
         /** @var ObjectManager $objectManager */
         $objectManager = Bootstrap::getObjectManager();
+        // Override the Uri to prevent errors while running this fixture.
+        $httpRequest = $objectManager->get(\Magento\Framework\App\Request\Http::class);
+        $httpRequest->setUri('');
+
         /** @var Store $store */
         $store = $objectManager->get(Store::class);
         $store->setData('available_currency_codes', ['EUR', 'USD', 'GBP', 'KRW', 'MXN', 'AUD']);
