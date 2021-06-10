@@ -82,8 +82,10 @@ class SpecialPriceWithCurrency extends SpecialPrice
 
         if (isset($this->saleableItem->getData('special_price_currency')[$currenctCurrencyCode]) && $this->saleableItem->getData('special_price_currency')[$currenctCurrencyCode] !== '') {
             $convertedPrice = (float)$this->saleableItem->getData('special_price_currency')[$currenctCurrencyCode];
-        } else {
+        } else if ($specialPrice !== null ){
             $convertedPrice = $currencyRate * $specialPrice;
+        } else {
+            $convertedPrice = null;
         }
 
         return $convertedPrice;
