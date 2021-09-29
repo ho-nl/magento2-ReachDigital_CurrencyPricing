@@ -65,7 +65,7 @@
         <column name="currency_price_id" xsi:type="int" identity="true" unsigned="true" nullable="false"/>
         <column name="currency" xsi:type="varchar" length="3" nullable="false"/>
         <column name="type" xsi:type="varchar" length="10" nullable="false"/>
-        <column name="price" xsi:type="decimal"/>
+        <column name="price" xsi:type="decimal"  scale="6" precision="20" unsigned="false" nullable="true" />
         <column name="entity_id" xsi:type="int" padding="10" unsigned="true" nullable="false" comment="Entity ID"/>
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="currency_price_id"/>
