@@ -7,18 +7,17 @@ declare(strict_types=1);
 
 namespace ReachDigital\CurrencyPricing\Pricing\Price;
 
-
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Pricing\Price\SpecialPrice;
 use Magento\Framework\Pricing\Adjustment\CalculatorInterface;
-use Magento\Framework\Stdlib\DateTime\TimezoneInterface;use Magento\Store\Model\Store;
+use Magento\Framework\Stdlib\DateTime\TimezoneInterface;
+use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManager;
 use ReachDigital\CurrencyPricing\Model\RealBaseCurrency\RealBaseCurrency;
 use ReachDigital\CurrencyPricing\Model\ResourceModel\CurrencyPrice;
 
 class SpecialPriceWithCurrency extends SpecialPrice
 {
-
     /**
      * @var Store
      */
@@ -73,16 +72,22 @@ class SpecialPriceWithCurrency extends SpecialPrice
 
         $currenctCurrencyCode = $this->store->getCurrentCurrencyCode();
 
-        $currencyPriceObjects = $this->currencyPriceResourceModel->loadPriceData($this->saleableItem->getId(), 'special');
+        $currencyPriceObjects = $this->currencyPriceResourceModel->loadPriceData(
+            $this->saleableItem->getId(),
+            'special'
+        );
         $currencyPriceData = [];
         foreach ($currencyPriceObjects as $currencyPriceObject) {
             $currencyPriceData[$currencyPriceObject['currency']] = $currencyPriceObject['price'] === '0' ? '' : (string)$currencyPriceObject['price'];
         }
         $this->saleableItem->setData('special_price_currency', $currencyPriceData);
 
-        if (isset($this->saleableItem->getData('special_price_currency')[$currenctCurrencyCode]) && $this->saleableItem->getData('special_price_currency')[$currenctCurrencyCode] !== '') {
-            $convertedPrice = (float)$this->saleableItem->getData('special_price_currency')[$currenctCurrencyCode];
-        } else if ($specialPrice !== null ){
+        if (
+            isset($this->saleableItem->getData('special_price_currency')[$currenctCurrencyCode]) &&
+            $this->saleableItem->getData('special_price_currency')[$currenctCurrencyCode] !== ''
+        ) {
+            $convertedPrice = (float) $this->saleableItem->getData('special_price_currency')[$currenctCurrencyCode];
+        } elseif ($specialPrice !== null) {
             $convertedPrice = $currencyRate * $specialPrice;
         } else {
             $convertedPrice = null;

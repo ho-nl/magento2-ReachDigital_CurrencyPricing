@@ -8,7 +8,6 @@ use ReachDigital\CurrencyPricing\Model\CurrencyPriceFactory;
 
 class ProductWithCurrencyPrices
 {
-
     /**
      * @var CurrencyPriceFactory
      */
@@ -27,8 +26,8 @@ class ProductWithCurrencyPrices
      */
     function __construct(
         CurrencyPriceFactory $currencyPriceFactory,
-        \ReachDigital\CurrencyPricing\Model\ResourceModel\CurrencyPrice $currencyPriceResourceModel)
-    {
+        \ReachDigital\CurrencyPricing\Model\ResourceModel\CurrencyPrice $currencyPriceResourceModel
+    ) {
         $this->currencyPriceFactory = $currencyPriceFactory;
         $this->currencyPriceResourceModel = $currencyPriceResourceModel;
     }
@@ -55,12 +54,15 @@ class ProductWithCurrencyPrices
                         break;
                     }
                 }
-                $this->savePrice($currency, $currencyPrice, $object->getId(),
+                $this->savePrice(
+                    $currency,
+                    $currencyPrice,
+                    $object->getId(),
                     $original === null ? null : $original['currency_price_id'],
-                    'price');
+                    'price'
+                );
             }
         }
-
 
         $specialCurrencyPrices = $object->getData('special_price_currency');
         $originalCurrencyPrices = $this->currencyPriceResourceModel->loadPriceData($object->getId(), 'special');
@@ -73,9 +75,13 @@ class ProductWithCurrencyPrices
                         break;
                     }
                 }
-                $this->savePrice($currency, $currencyPrice, $object->getId(),
+                $this->savePrice(
+                    $currency,
+                    $currencyPrice,
+                    $object->getId(),
                     $original === null ? null : $original['currency_price_id'],
-                    'special');
+                    'special'
+                );
             }
         }
 
@@ -88,14 +94,12 @@ class ProductWithCurrencyPrices
             'currency' => $currency,
             'type' => $type,
             'price' => $currencyPrice,
-            'entity_id' => $priceId
+            'entity_id' => $priceId,
         ];
         if ($currencyPriceId !== null) {
             $dataArray['currency_price_id'] = $currencyPriceId;
         }
-        $currencyPriceObject = new \Magento\Framework\DataObject(
-            $dataArray
-        );
+        $currencyPriceObject = new \Magento\Framework\DataObject($dataArray);
 
         $this->currencyPriceResourceModel->savePriceData($currencyPriceObject);
     }

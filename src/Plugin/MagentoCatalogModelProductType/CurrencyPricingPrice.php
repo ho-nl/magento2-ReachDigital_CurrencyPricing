@@ -16,7 +16,6 @@ use ReachDigital\CurrencyPricing\Model\RealBaseCurrency\RealBaseCurrency;
 
 class CurrencyPricingPrice
 {
-
     /**
      * @var GroupManagementInterface
      */
@@ -90,8 +89,7 @@ class CurrencyPricingPrice
         \ReachDigital\CurrencyPricing\Model\ResourceModel\CurrencyPrice $currencyPriceResourceModel,
         \Magento\Framework\Stdlib\DateTime\TimezoneInterface $localeDate,
         ProductTierPriceExtensionFactory $tierPriceExtensionFactory = null
-    )
-    {
+    ) {
         $this->groupManagement = $groupManagement;
         $this->customerSession = $customerSession;
         $this->store = $store;
@@ -99,20 +97,24 @@ class CurrencyPricingPrice
         $this->storeManager = $storeManager;
         $this->config = $config;
         $this->tierPriceFactory = $tierPriceFactory;
-        $this->tierPriceExtensionFactory = $tierPriceExtensionFactory ?: ObjectManager::getInstance()
-            ->get(ProductTierPriceExtensionFactory::class);
-        $this->currencyPriceResourceModel= $currencyPriceResourceModel;
+        $this->tierPriceExtensionFactory =
+            $tierPriceExtensionFactory ?: ObjectManager::getInstance()->get(ProductTierPriceExtensionFactory::class);
+        $this->currencyPriceResourceModel = $currencyPriceResourceModel;
         $this->localeDate = $localeDate;
     }
 
-    public function aroundGetPrice(\Magento\Catalog\Model\Product\Type\Price $subject, \Closure $proceed, Product $product) {
+    public function aroundGetPrice(
+        \Magento\Catalog\Model\Product\Type\Price $subject,
+        \Closure $proceed,
+        Product $product
+    ) {
         $currenctCurrencyCode = $this->store->getCurrentCurrencyCode();
         $currencyRate = $this->realBaseCurrency->getRealCurrentCurrencyRate();
         $price = (float) $product->getData('price');
 
         if (!$product->getData('currency_price')) {
             $currencyPriceObjects = $this->currencyPriceResourceModel->loadPriceData($product->getId(), 'price');
-            $currencyPriceData    = [];
+            $currencyPriceData = [];
             foreach ($currencyPriceObjects as $currencyPriceObject) {
                 $currencyPriceData[$currencyPriceObject['currency']] = $currencyPriceObject['price'] === '0' ? ''
                     : (string)$currencyPriceObject['price'];
@@ -120,15 +122,17 @@ class CurrencyPricingPrice
             $product->setData('currency_price', $currencyPriceData);
         }
 
-        if (isset($product->getData('currency_price')[$currenctCurrencyCode]) && $product->getData('currency_price')[$currenctCurrencyCode] !== '') {
-            $convertedPrice = (float)$product->getData('currency_price')[$currenctCurrencyCode];
+        if (
+            isset($product->getData('currency_price')[$currenctCurrencyCode]) &&
+            $product->getData('currency_price')[$currenctCurrencyCode] !== ''
+        ) {
+            $convertedPrice = (float) $product->getData('currency_price')[$currenctCurrencyCode];
         } else {
             $convertedPrice = $currencyRate * $price;
         }
 
         return $convertedPrice;
     }
-
 
     /**
      * Plugin for Price::getBasePrice().
@@ -144,17 +148,14 @@ class CurrencyPricingPrice
      *
      * @return float|array
      */
-    public function aroundGetBasePrice(Price $subject, \Closure $proceed, Product $product, $qty = null) {
+    public function aroundGetBasePrice(Price $subject, \Closure $proceed, Product $product, $qty = null)
+    {
         $currencyRate = $this->realBaseCurrency->getRealCurrentCurrencyRate();
         $convertedPrice = $product->getPrice();
 
         $tierPrice = $this->_applyTierPrice($product, $qty, $convertedPrice);
         $specialPrice = $this->_applySpecialPrice($subject, $product, $convertedPrice, $currencyRate);
-        return min(
-            $convertedPrice,
-            $tierPrice,
-            $specialPrice
-        );
+        return min($convertedPrice, $tierPrice, $specialPrice);
     }
 
     /**
@@ -171,7 +172,12 @@ class CurrencyPricingPrice
      * @return Price
      * @throws \Magento\Framework\Exception\LocalizedException
      */
-    public function aroundSetTierPrices(Price $subject, \Closure $proceed, Product $product, array $tierPrices = null): Price {
+    public function aroundSetTierPrices(
+        Price $subject,
+        \Closure $proceed,
+        Product $product,
+        array $tierPrices = null
+    ): Price {
         // null array means leave everything as is
         if ($tierPrices === null) {
             return $subject;
@@ -186,17 +192,17 @@ class CurrencyPricingPrice
             $extensionAttributes = $price->getExtensionAttributes();
             $priceWebsiteId = $websiteId;
             if (isset($extensionAttributes) && is_numeric($extensionAttributes->getWebsiteId())) {
-                $priceWebsiteId = (string)$extensionAttributes->getWebsiteId();
+                $priceWebsiteId = (string) $extensionAttributes->getWebsiteId();
             }
             $prices[] = [
                 'website_id' => $priceWebsiteId,
                 'cust_group' => $price->getCustomerGroupId(),
                 'website_price' => $price->getValue(),
                 'price' => $price->getValue(),
-                'all_groups' => ($price->getCustomerGroupId() == $allGroupsId),
+                'all_groups' => $price->getCustomerGroupId() == $allGroupsId,
                 'price_qty' => $price->getQty(),
                 'percentage_value' => $extensionAttributes ? $extensionAttributes->getPercentageValue() : null,
-                'currency' => $price->getData('currency')
+                'currency' => $price->getData('currency'),
             ];
         }
         $product->setData('tier_price', $prices);
@@ -213,8 +219,12 @@ class CurrencyPricingPrice
      *
      * @return  float
      */
-    protected function _applySpecialPrice(Price $subject, Product $product, float $finalPrice, float $currencyRate) :float
-    {
+    protected function _applySpecialPrice(
+        Price $subject,
+        Product $product,
+        float $finalPrice,
+        float $currencyRate
+    ): float {
         $currenctCurrencyCode = $this->store->getCurrentCurrencyCode();
         $specialPrice = (float) $product->getSpecialPrice();
 
@@ -225,8 +235,11 @@ class CurrencyPricingPrice
         }
         $product->setData('special_price_currency', $currencyPriceData);
 
-        if (isset($product->getData('special_price_currency')[$currenctCurrencyCode]) && $product->getData('special_price_currency')[$currenctCurrencyCode] !== '') {
-            $convertedPrice = (float)$product->getData('special_price_currency')[$currenctCurrencyCode];
+        if (
+            isset($product->getData('special_price_currency')[$currenctCurrencyCode]) &&
+            $product->getData('special_price_currency')[$currenctCurrencyCode] !== ''
+        ) {
+            $convertedPrice = (float) $product->getData('special_price_currency')[$currenctCurrencyCode];
         } else {
             $convertedPrice = $currencyRate * $specialPrice;
         }
@@ -248,7 +261,7 @@ class CurrencyPricingPrice
      * @param   float $finalPrice
      * @return  float
      */
-    protected function _applyTierPrice(Product $product, $qty, float $finalPrice) :float
+    protected function _applyTierPrice(Product $product, $qty, float $finalPrice): float
     {
         if ($qty === null) {
             $tierPrice = $product->getTierPrice(1);
@@ -271,9 +284,13 @@ class CurrencyPricingPrice
      * @return float|array
      * @throws \Magento\Framework\Exception\LocalizedException
      */
-    public function aroundGetTierPrice(Price $subject, \Closure $proceed, $qty, Product $product) {
-
-        $specialPriceActive = $this->localeDate->isScopeDateInInterval($product->getStore(), $product->getSpecialFromDate(), $product->getSpecialToDate());
+    public function aroundGetTierPrice(Price $subject, \Closure $proceed, $qty, Product $product)
+    {
+        $specialPriceActive = $this->localeDate->isScopeDateInInterval(
+            $product->getStore(),
+            $product->getSpecialFromDate(),
+            $product->getSpecialToDate()
+        );
 
         $allGroupsId = $this->getAllCustomerGroupsId();
 
@@ -288,7 +305,7 @@ class CurrencyPricingPrice
                         'website_price' => $product->getPrice(),
                         'price_qty' => 1,
                         'cust_group' => $allGroupsId,
-                    ]
+                    ],
                 ];
             }
         }
@@ -312,9 +329,11 @@ class CurrencyPricingPrice
                     // higher tier qty already found
                     continue;
                 }
-                if ($price['price_qty'] == $prevQty &&
+                if (
+                    $price['price_qty'] == $prevQty &&
                     $prevGroup != $allGroupsId &&
-                    $price['cust_group'] == $allGroupsId) {
+                    $price['cust_group'] == $allGroupsId
+                ) {
                     // found tier qty is same as current tier qty but current tier group is ALL_GROUPS
                     continue;
                 }
@@ -366,7 +385,8 @@ class CurrencyPricingPrice
         $tierPrices = $this->getExistingPrices($product);
         foreach ($tierPrices as $price) {
             /** @var \Magento\Catalog\Api\Data\ProductTierPriceInterface $tierPrice */
-            $tierPrice = $this->tierPriceFactory->create()
+            $tierPrice = $this->tierPriceFactory
+                ->create()
                 ->setExtensionAttributes($this->tierPriceExtensionFactory->create());
             $tierPrice->setCustomerGroupId($price['cust_group']);
             if (array_key_exists('website_price', $price)) {
@@ -465,7 +485,7 @@ class CurrencyPricingPrice
      *
      * @return bool
      */
-    public function isTierPriceAllowed($price, $isSpecialPriceActive) :bool
+    public function isTierPriceAllowed($price, $isSpecialPriceActive): bool
     {
         if (!$isSpecialPriceActive && isset($price['is_special']) && $price['is_special'] === '1') {
             return false;
