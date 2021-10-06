@@ -116,8 +116,8 @@ class CurrencyPricingPrice
             $currencyPriceObjects = $this->currencyPriceResourceModel->loadPriceData($product->getId(), 'price');
             $currencyPriceData = [];
             foreach ($currencyPriceObjects as $currencyPriceObject) {
-                $currencyPriceData[$currencyPriceObject['currency']] = $currencyPriceObject['price'] === '0' ? ''
-                    : (string)$currencyPriceObject['price'];
+                $currencyPriceData[$currencyPriceObject['currency']] =
+                    (int) $currencyPriceObject['price'] === 0 ? '' : (string) $currencyPriceObject['price'];
             }
             $product->setData('currency_price', $currencyPriceData);
         }
@@ -231,7 +231,8 @@ class CurrencyPricingPrice
         $currencyPriceObjects = $this->currencyPriceResourceModel->loadPriceData($product->getId(), 'special');
         $currencyPriceData = [];
         foreach ($currencyPriceObjects as $currencyPriceObject) {
-            $currencyPriceData[$currencyPriceObject['currency']] = $currencyPriceObject['price'] === '0' ? '' : (string)$currencyPriceObject['price'];
+            $currencyPriceData[$currencyPriceObject['currency']] =
+                (int) $currencyPriceObject['price'] === 0 ? '' : (string) $currencyPriceObject['price'];
         }
         $product->setData('special_price_currency', $currencyPriceData);
 

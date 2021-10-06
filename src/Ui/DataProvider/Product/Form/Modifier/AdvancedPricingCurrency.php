@@ -182,7 +182,8 @@ class AdvancedPricingCurrency extends AbstractModifier
         $currencyPriceObjects = $this->currencyPriceResourceModel->loadPriceData($productId, 'price');
         $currencyPriceData = [];
         foreach ($currencyPriceObjects as $currencyPriceObject) {
-            $currencyPriceData[$currencyPriceObject['currency']] = $currencyPriceObject['price'] === '0' ? '' : (string)$currencyPriceObject['price'];
+            $currencyPriceData[$currencyPriceObject['currency']] =
+                (int) $currencyPriceObject['price'] === 0 ? '' : (string) $currencyPriceObject['price'];
         }
 
         if (count($currencyPriceData) == 0) {
@@ -197,7 +198,8 @@ class AdvancedPricingCurrency extends AbstractModifier
         $specialCurrencyPriceObjects = $this->currencyPriceResourceModel->loadPriceData($productId, 'special');
         $specialCurrencyPriceData = [];
         foreach ($specialCurrencyPriceObjects as $currencyPriceObject) {
-            $specialCurrencyPriceData[$currencyPriceObject['currency']] = $currencyPriceObject['price'] === '0' ? '' : (string)$currencyPriceObject['price'];
+            $specialCurrencyPriceData[$currencyPriceObject['currency']] =
+                (int) $currencyPriceObject['price'] === 0 ? '' : (string) $currencyPriceObject['price'];
         }
 
         if (count($specialCurrencyPriceData) == 0) {

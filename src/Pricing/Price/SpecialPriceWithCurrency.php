@@ -78,7 +78,8 @@ class SpecialPriceWithCurrency extends SpecialPrice
         );
         $currencyPriceData = [];
         foreach ($currencyPriceObjects as $currencyPriceObject) {
-            $currencyPriceData[$currencyPriceObject['currency']] = $currencyPriceObject['price'] === '0' ? '' : (string)$currencyPriceObject['price'];
+            $currencyPriceData[$currencyPriceObject['currency']] =
+                (int) $currencyPriceObject['price'] === 0 ? '' : (string) $currencyPriceObject['price'];
         }
         $this->saleableItem->setData('special_price_currency', $currencyPriceData);
 
