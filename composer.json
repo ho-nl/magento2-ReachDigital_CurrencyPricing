@@ -3,7 +3,7 @@
     "description": "Allows you to set the price of a product in various currencies.",
     "homepage": "https://github.com/ho-nl/magento2-ReachDigital_CurrencyPricing",
     "require": {
-        "php": "7.0.2|7.0.4|~7.0.6|~7.1.0|~7.2.0"
+        "php": "7.0.2|7.0.4|~7.0.6|~7.1.0|~7.2.0|~7.3.0"
     },
     "type": "magento2-module",
     "license": "BSD-2-Clause",
