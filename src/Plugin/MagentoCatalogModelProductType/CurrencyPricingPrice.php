@@ -246,8 +246,8 @@ class CurrencyPricingPrice
         }
 
         return $subject->calculateSpecialPrice(
-            $finalPrice,
-            $convertedPrice,
+            \min($finalPrice, $convertedPrice),
+            100,
             $product->getSpecialFromDate(),
             $product->getSpecialToDate(),
             $product->getStore()
