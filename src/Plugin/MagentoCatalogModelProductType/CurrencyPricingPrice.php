@@ -113,7 +113,10 @@ class CurrencyPricingPrice
         $price = (float) $product->getData('price');
 
         if (!$product->getData('currency_price')) {
-            $currencyPriceObjects = $this->currencyPriceResourceModel->loadPriceData($product->getId(), 'price', null);
+            $currencyPriceObjects = $this->currencyPriceResourceModel->loadPriceDataForDisplay(
+                $product->getId(),
+                'price'
+            );
             $currencyPriceData = [];
             foreach ($currencyPriceObjects as $currencyPriceObject) {
                 $currencyPriceData[$currencyPriceObject['currency']] =
@@ -228,7 +231,10 @@ class CurrencyPricingPrice
         $currenctCurrencyCode = $this->store->getCurrentCurrencyCode();
         $specialPrice = (float) $product->getSpecialPrice();
 
-        $currencyPriceObjects = $this->currencyPriceResourceModel->loadPriceData($product->getId(), 'special', null);
+        $currencyPriceObjects = $this->currencyPriceResourceModel->loadPriceDataForDisplay(
+            $product->getId(),
+            'special'
+        );
         $currencyPriceData = [];
         foreach ($currencyPriceObjects as $currencyPriceObject) {
             $currencyPriceData[$currencyPriceObject['currency']] =

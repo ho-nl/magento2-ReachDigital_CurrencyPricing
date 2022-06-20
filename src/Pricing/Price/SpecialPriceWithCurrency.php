@@ -72,10 +72,9 @@ class SpecialPriceWithCurrency extends SpecialPrice
 
         $currenctCurrencyCode = $this->store->getCurrentCurrencyCode();
 
-        $currencyPriceObjects = $this->currencyPriceResourceModel->loadPriceData(
+        $currencyPriceObjects = $this->currencyPriceResourceModel->loadPriceDataForDisplay(
             $this->saleableItem->getId(),
-            'special',
-            null
+            'special'
         );
         $currencyPriceData = [];
         foreach ($currencyPriceObjects as $currencyPriceObject) {

@@ -152,7 +152,7 @@ class ProductWithCurrencyPrices
      */
     public function afterLoad(Product $subject, $result, AbstractModel $object, $entityId, $attributes = []): Product
     {
-        $currencyPriceObjects = $this->currencyPriceResourceModel->loadPriceData($entityId, 'price', null);
+        $currencyPriceObjects = $this->currencyPriceResourceModel->loadPriceDataForDisplay($entityId, 'price');
         $currencyPriceData = [];
         foreach ($currencyPriceObjects as $currencyPriceObject) {
             $currencyPriceData[$currencyPriceObject['currency']] =
@@ -160,7 +160,7 @@ class ProductWithCurrencyPrices
         }
         $object->setData('currency_price', $currencyPriceData);
 
-        $specialCurrencyPriceObjects = $this->currencyPriceResourceModel->loadPriceData($entityId, 'special', null);
+        $specialCurrencyPriceObjects = $this->currencyPriceResourceModel->loadPriceDataForDisplay($entityId, 'special');
         $specialCurrencyPriceData = [];
         foreach ($specialCurrencyPriceObjects as $currencyPriceObject) {
             $specialCurrencyPriceData[$currencyPriceObject['currency']] =
