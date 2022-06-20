@@ -5,6 +5,7 @@ namespace ReachDigital\CurrencyPricing\Plugin\MagentoCatalogModelResourceModel;
 use Magento\Catalog\Model\ResourceModel\Product;
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Model\AbstractModel;
+use ReachDigital\CurrencyPricing\Model\CurrencyPrice;
 use ReachDigital\CurrencyPricing\Model\CurrencyPriceFactory;
 
 class ProductWithCurrencyPrices
@@ -54,35 +55,47 @@ class ProductWithCurrencyPrices
         $currencyPrices = $object->getData('currency_price');
         $storeId = $object->getStoreId() === 0 ? null : $object->getStoreId();
         $originalPrices = $this->currencyPriceResourceModel->loadPriceData($object->getId(), 'price', $storeId);
-        if ($currencyPrices !== null) {
-            $useDefault = $this->request->getParam('use_default');
-            foreach ($currencyPrices as $currency => $value) {
-                if (
-                    isset($useDefault['currency_price_' . $currency]) &&
-                    $useDefault['currency_price_' . $currency] === '1'
-                ) {
-                    unset($currencyPrices[$currency]);
-                }
-            }
-            foreach ($currencyPrices as $currency => $currencyPrice) {
-                $original = null;
-                foreach ($originalPrices as $originalPrice) {
-                    if ($originalPrice['currency'] === $currency && $originalPrice['storeview_id'] === $storeId) {
-                        $original = $originalPrice;
-                        break;
-                    }
-                }
-                $this->savePrice(
-                    $currency,
-                    $currencyPrice,
-                    $object->getId(),
-                    $original === null ? null : $original['currency_price_id'],
-                    'price',
-                    $storeId
-                );
-            }
-            $object->unsetData('currency_price');
+        if ($currencyPrices === null) {
+            $currencyPrices = [];
         }
+        $savedPriceIds = [];
+        $useDefault = $this->request->getParam('use_default');
+        foreach ($currencyPrices as $currency => $value) {
+            if (
+                isset($useDefault['currency_price_' . $currency]) &&
+                $useDefault['currency_price_' . $currency] === '1'
+            ) {
+                unset($currencyPrices[$currency]);
+            }
+        }
+        foreach ($currencyPrices as $currency => $currencyPrice) {
+            $original = null;
+            foreach ($originalPrices as $originalPrice) {
+                if ($originalPrice['currency'] === $currency && (int) $originalPrice['storeview_id'] === $storeId) {
+                    $original = $originalPrice;
+                    break;
+                }
+            }
+            $this->savePrice(
+                $currency,
+                $currencyPrice,
+                $object->getId(),
+                $original === null ? null : $original['currency_price_id'],
+                'price',
+                $storeId
+            );
+            if ($original !== null) {
+                $savedPriceIds[] = $original['currency_price_id'];
+            }
+        }
+        foreach ($originalPrices as $currencyPrice) {
+            if (!isset($savedPriceIds[$currencyPrice['currency_price_id']])) {
+                $currencyPriceModel = $this->currencyPriceFactory->create();
+                $currencyPriceModel->setData($currencyPrice);
+                $this->currencyPriceResourceModel->delete($currencyPriceModel);
+            }
+        }
+        $object->unsetData('currency_price');
 
         $specialCurrencyPrices = $object->getData('special_price_currency');
         $originalCurrencyPrices = $this->currencyPriceResourceModel->loadPriceData(
@@ -90,35 +103,46 @@ class ProductWithCurrencyPrices
             'special',
             $storeId
         );
-        if ($specialCurrencyPrices !== null) {
-            $useDefault = $this->request->getParam('use_default');
-            foreach ($specialCurrencyPrices as $currency => $value) {
-                if (
-                    isset($useDefault['special_price_currency_' . $currency]) &&
-                    $useDefault['special_price_currency_' . $currency] === '1'
-                ) {
-                    unset($specialCurrencyPrices[$currency]);
-                }
-            }
-            foreach ($specialCurrencyPrices as $currency => $currencyPrice) {
-                $original = null;
-                foreach ($originalCurrencyPrices as $originalPrice) {
-                    if ($originalPrice['currency'] === $currency && $originalPrice['storeview_id'] === $storeId) {
-                        $original = $originalPrice;
-                        break;
-                    }
-                }
-                $this->savePrice(
-                    $currency,
-                    $currencyPrice,
-                    $object->getId(),
-                    $original === null ? null : $original['currency_price_id'],
-                    'special',
-                    $storeId
-                );
-            }
-            $object->unsetData('special_price_currency');
+        if ($specialCurrencyPrices === null) {
+            $specialCurrencyPrices = [];
         }
+        $useDefault = $this->request->getParam('use_default');
+        foreach ($specialCurrencyPrices as $currency => $value) {
+            if (
+                isset($useDefault['special_price_currency_' . $currency]) &&
+                $useDefault['special_price_currency_' . $currency] === '1'
+            ) {
+                unset($specialCurrencyPrices[$currency]);
+            }
+        }
+        foreach ($specialCurrencyPrices as $currency => $currencyPrice) {
+            $original = null;
+            foreach ($originalCurrencyPrices as $originalPrice) {
+                if ($originalPrice['currency'] === $currency && (int) $originalPrice['storeview_id'] === $storeId) {
+                    $original = $originalPrice;
+                    break;
+                }
+            }
+            $this->savePrice(
+                $currency,
+                $currencyPrice,
+                $object->getId(),
+                $original === null ? null : $original['currency_price_id'],
+                'special',
+                $storeId
+            );
+            if ($original !== null) {
+                $savedPriceIds[] = $original['currency_price_id'];
+            }
+        }
+        foreach ($originalCurrencyPrices as $currencyPrice) {
+            if (!isset($savedPriceIds[$currencyPrice['currency_price_id']])) {
+                $currencyPriceModel = $this->currencyPriceFactory->create();
+                $currencyPriceModel->setData($currencyPrice);
+                $this->currencyPriceResourceModel->delete($currencyPriceModel);
+            }
+        }
+        $object->unsetData('special_price_currency');
 
         return $returnValue;
     }
