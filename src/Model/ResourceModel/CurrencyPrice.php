@@ -22,11 +22,16 @@ class CurrencyPrice extends \Magento\Framework\Model\ResourceModel\Db\AbstractDb
      * @param int $productId
      * @return array
      */
-    public function loadPriceData($productId, $type): array
+    public function loadPriceData($productId, $type, $storeId): array
     {
         $select = $this->getSelect();
         $select->where('entity_id = ?', $productId);
         $select->where('type = ?', $type);
+        if ($storeId === null) {
+            $select->where('storeview_id IS NULL');
+        } else {
+            $select->where('storeview_id = ?', $storeId);
+        }
 
         return $this->getConnection()->fetchAll($select);
     }
@@ -42,9 +47,11 @@ class CurrencyPrice extends \Magento\Framework\Model\ResourceModel\Db\AbstractDb
             'price' => 'price',
             'type' => 'type',
             'entity_id' => 'entity_id',
+            'storeview_id' => 'storeview_id',
         ];
 
-        $select = $this->getConnection()->select()
+        $select = $this->getConnection()
+            ->select()
             ->from($this->getMainTable(), $columns);
 
         return $select;

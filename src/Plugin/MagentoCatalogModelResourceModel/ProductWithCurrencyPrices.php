@@ -3,6 +3,7 @@
 namespace ReachDigital\CurrencyPricing\Plugin\MagentoCatalogModelResourceModel;
 
 use Magento\Catalog\Model\ResourceModel\Product;
+use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Model\AbstractModel;
 use ReachDigital\CurrencyPricing\Model\CurrencyPriceFactory;
 
@@ -19,6 +20,11 @@ class ProductWithCurrencyPrices
     private $currencyPriceResourceModel;
 
     /**
+     * @var RequestInterface
+     */
+    private $request;
+
+    /**
      * ProductWithCurrencyPrices constructor.
      *
      * @param CurrencyPriceFactory                                            $currencyPriceFactory
@@ -26,10 +32,12 @@ class ProductWithCurrencyPrices
      */
     function __construct(
         CurrencyPriceFactory $currencyPriceFactory,
-        \ReachDigital\CurrencyPricing\Model\ResourceModel\CurrencyPrice $currencyPriceResourceModel
+        \ReachDigital\CurrencyPricing\Model\ResourceModel\CurrencyPrice $currencyPriceResourceModel,
+        RequestInterface $request
     ) {
         $this->currencyPriceFactory = $currencyPriceFactory;
         $this->currencyPriceResourceModel = $currencyPriceResourceModel;
+        $this->request = $request;
     }
 
     /**
@@ -44,12 +52,22 @@ class ProductWithCurrencyPrices
         /** @var Product $returnValue */
         $returnValue = $proceed($object);
         $currencyPrices = $object->getData('currency_price');
-        $originalPrices = $this->currencyPriceResourceModel->loadPriceData($object->getId(), 'price');
+        $storeId = $object->getStoreId() === 0 ? null : $object->getStoreId();
+        $originalPrices = $this->currencyPriceResourceModel->loadPriceData($object->getId(), 'price', $storeId);
         if ($currencyPrices !== null) {
+            $useDefault = $this->request->getParam('use_default');
+            foreach ($currencyPrices as $currency => $value) {
+                if (
+                    isset($useDefault['currency_price_' . $currency]) &&
+                    $useDefault['currency_price_' . $currency] === '1'
+                ) {
+                    unset($currencyPrices[$currency]);
+                }
+            }
             foreach ($currencyPrices as $currency => $currencyPrice) {
                 $original = null;
                 foreach ($originalPrices as $originalPrice) {
-                    if ($originalPrice['currency'] === $currency) {
+                    if ($originalPrice['currency'] === $currency && $originalPrice['storeview_id'] === $storeId) {
                         $original = $originalPrice;
                         break;
                     }
@@ -59,18 +77,33 @@ class ProductWithCurrencyPrices
                     $currencyPrice,
                     $object->getId(),
                     $original === null ? null : $original['currency_price_id'],
-                    'price'
+                    'price',
+                    $storeId
                 );
             }
+            $object->unsetData('currency_price');
         }
 
         $specialCurrencyPrices = $object->getData('special_price_currency');
-        $originalCurrencyPrices = $this->currencyPriceResourceModel->loadPriceData($object->getId(), 'special');
+        $originalCurrencyPrices = $this->currencyPriceResourceModel->loadPriceData(
+            $object->getId(),
+            'special',
+            $storeId
+        );
         if ($specialCurrencyPrices !== null) {
+            $useDefault = $this->request->getParam('use_default');
+            foreach ($specialCurrencyPrices as $currency => $value) {
+                if (
+                    isset($useDefault['special_price_currency_' . $currency]) &&
+                    $useDefault['special_price_currency_' . $currency] === '1'
+                ) {
+                    unset($specialCurrencyPrices[$currency]);
+                }
+            }
             foreach ($specialCurrencyPrices as $currency => $currencyPrice) {
                 $original = null;
                 foreach ($originalCurrencyPrices as $originalPrice) {
-                    if ($originalPrice['currency'] === $currency) {
+                    if ($originalPrice['currency'] === $currency && $originalPrice['storeview_id'] === $storeId) {
                         $original = $originalPrice;
                         break;
                     }
@@ -80,21 +113,24 @@ class ProductWithCurrencyPrices
                     $currencyPrice,
                     $object->getId(),
                     $original === null ? null : $original['currency_price_id'],
-                    'special'
+                    'special',
+                    $storeId
                 );
             }
+            $object->unsetData('special_price_currency');
         }
 
         return $returnValue;
     }
 
-    private function savePrice($currency, $currencyPrice, $priceId, $currencyPriceId, $type)
+    private function savePrice($currency, $currencyPrice, $priceId, $currencyPriceId, $type, $storeviewId)
     {
         $dataArray = [
             'currency' => $currency,
             'type' => $type,
             'price' => $currencyPrice,
             'entity_id' => $priceId,
+            'storeview_id' => $storeviewId,
         ];
         if ($currencyPriceId !== null) {
             $dataArray['currency_price_id'] = $currencyPriceId;
@@ -116,7 +152,7 @@ class ProductWithCurrencyPrices
      */
     public function afterLoad(Product $subject, $result, AbstractModel $object, $entityId, $attributes = []): Product
     {
-        $currencyPriceObjects = $this->currencyPriceResourceModel->loadPriceData($entityId, 'price');
+        $currencyPriceObjects = $this->currencyPriceResourceModel->loadPriceData($entityId, 'price', null);
         $currencyPriceData = [];
         foreach ($currencyPriceObjects as $currencyPriceObject) {
             $currencyPriceData[$currencyPriceObject['currency']] =
@@ -124,7 +160,7 @@ class ProductWithCurrencyPrices
         }
         $object->setData('currency_price', $currencyPriceData);
 
-        $specialCurrencyPriceObjects = $this->currencyPriceResourceModel->loadPriceData($entityId, 'special');
+        $specialCurrencyPriceObjects = $this->currencyPriceResourceModel->loadPriceData($entityId, 'special', null);
         $specialCurrencyPriceData = [];
         foreach ($specialCurrencyPriceObjects as $currencyPriceObject) {
             $specialCurrencyPriceData[$currencyPriceObject['currency']] =
