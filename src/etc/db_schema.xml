@@ -31,39 +31,50 @@
     <table name="catalog_product_index_price" resource="default" engine="innodb"
            comment="Catalog Product Price Index Table">
         <column xsi:type="varchar" name="currency" comment="Currency for the price" nullable="false" length="3"/>
+        <column xsi:type="int" name="storeview_id" padding="10" unsigned="true" nullable="false"
+                comment="Storeview ID"/>
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="entity_id"/>
             <column name="customer_group_id"/>
             <column name="website_id"/>
             <column name="currency"/>
+            <column name="storeview_id"/>
         </constraint>
     </table>
 
     <table name="catalog_product_index_price_tmp" resource="default" engine="memory"
            comment="Catalog Product Price Indexer Temp Table">
         <column xsi:type="varchar" name="currency" comment="Currency for the price" nullable="false" length="3"/>
+        <column xsi:type="int" name="storeview_id" padding="10" unsigned="true" nullable="false"
+                comment="Storeview ID"/>
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="entity_id"/>
             <column name="customer_group_id"/>
             <column name="website_id"/>
             <column name="currency"/>
+            <column name="storeview_id"/>
         </constraint>
     </table>
 
     <table name="catalog_product_index_price_replica" resource="default" engine="innodb"
            comment="Catalog Product Price Index Table">
         <column xsi:type="varchar" name="currency" comment="Currency for the price" nullable="false" length="3"/>
+        <column xsi:type="int" name="storeview_id" padding="10" unsigned="true" nullable="false"
+                comment="Storeview ID"/>
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="entity_id"/>
             <column name="customer_group_id"/>
             <column name="website_id"/>
             <column name="currency"/>
+            <column name="storeview_id"/>
         </constraint>
     </table>
 
     <table name="catalog_product_entity_currency_price" resource="default" engine="innodb">
         <column name="currency_price_id" xsi:type="int" identity="true" unsigned="true" nullable="false"/>
         <column name="currency" xsi:type="varchar" length="3" nullable="false"/>
+        <column xsi:type="int" name="storeview_id" padding="10" unsigned="true" nullable="true"
+                comment="Storeview ID"/>
         <column name="type" xsi:type="varchar" length="10" nullable="false"/>
         <column name="price" xsi:type="decimal"  scale="6" precision="20" unsigned="false" nullable="true" />
         <column name="entity_id" xsi:type="int" padding="10" unsigned="true" nullable="false" comment="Entity ID"/>
