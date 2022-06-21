@@ -17,7 +17,6 @@ use Magento\Catalog\Model\ResourceModel\Category;
 
 class CollectionWithCurrency extends Collection
 {
-
     /**
      * @var \Magento\Store\Model\StoreManagerInterface
      */
@@ -61,14 +60,36 @@ class CollectionWithCurrency extends Collection
         DimensionFactory $dimensionFactory = null,
         Category $categoryResourceModel = null
     ) {
-        parent::__construct($entityFactory, $logger, $fetchStrategy, $eventManager, $eavConfig, $resource,
-            $eavEntityFactory, $resourceHelper, $universalFactory, $storeManager, $moduleManager,
-            $catalogProductFlatState, $scopeConfig, $productOptionFactory, $catalogUrl, $localeDate, $customerSession,
-            $dateTime, $groupManagement, $connection, $productLimitationFactory, $metadataPool, $tableMaintainer,
-            $priceTableResolver, $dimensionFactory, $categoryResourceModel);
+        parent::__construct(
+            $entityFactory,
+            $logger,
+            $fetchStrategy,
+            $eventManager,
+            $eavConfig,
+            $resource,
+            $eavEntityFactory,
+            $resourceHelper,
+            $universalFactory,
+            $storeManager,
+            $moduleManager,
+            $catalogProductFlatState,
+            $scopeConfig,
+            $productOptionFactory,
+            $catalogUrl,
+            $localeDate,
+            $customerSession,
+            $dateTime,
+            $groupManagement,
+            $connection,
+            $productLimitationFactory,
+            $metadataPool,
+            $tableMaintainer,
+            $priceTableResolver,
+            $dimensionFactory,
+            $categoryResourceModel
+        );
         $this->storeManager = $storeManager;
-        $this->dimensionFactory = $dimensionFactory
-            ?: ObjectManager::getInstance()->get(DimensionFactory::class);
+        $this->dimensionFactory = $dimensionFactory ?: ObjectManager::getInstance()->get(DimensionFactory::class);
         $this->priceTableResolver = $priceTableResolver ?: ObjectManager::getInstance()->get(PriceTableResolver::class);
     }
 
@@ -82,11 +103,12 @@ class CollectionWithCurrency extends Collection
     protected function _productLimitationPrice($joinLeft = false)
     {
         $filters = $this->_productLimitationFilters;
-        if (!$filters->isUsingPriceIndex() ||
+        if (
+            !$filters->isUsingPriceIndex() ||
             !isset($filters['website_id']) ||
-            (string)$filters['website_id'] === '' ||
+            (string) $filters['website_id'] === '' ||
             !isset($filters['customer_group_id']) ||
-            (string)$filters['customer_group_id'] === ''
+            (string) $filters['customer_group_id'] === ''
         ) {
             return $this;
         }
@@ -96,15 +118,16 @@ class CollectionWithCurrency extends Collection
 
         $connection = $this->getConnection();
         $select = $this->getSelect();
-        $joinCond = join(
-            ' AND ',
-            [
-                'price_index.entity_id = e.entity_id',
-                $connection->quoteInto('price_index.website_id = ?', $filters['website_id']),
-                $connection->quoteInto('price_index.customer_group_id = ?', $filters['customer_group_id']),
-                $connection->quoteInto('price_index.currency = ?', $this->storeManager->getStore($this->getStoreId())->getCurrentCurrencyCode())
-            ]
-        );
+        $joinCond = join(' AND ', [
+            'price_index.entity_id = e.entity_id',
+            $connection->quoteInto('price_index.website_id = ?', $filters['website_id']),
+            $connection->quoteInto('price_index.customer_group_id = ?', $filters['customer_group_id']),
+            $connection->quoteInto(
+                'price_index.currency = ?',
+                $this->storeManager->getStore($this->getStoreId())->getCurrentCurrencyCode()
+            ),
+            $connection->quoteInto('price_index.storeview_id = ?', $this->getStoreId()),
+        ]);
 
         $fromPart = $select->getPart(\Magento\Framework\DB\Select::FROM);
         if (!isset($fromPart['price_index'])) {
@@ -125,19 +148,16 @@ class CollectionWithCurrency extends Collection
             ];
 
             $tableName = [
-                'price_index' => $this->priceTableResolver->resolve(
-                    'catalog_product_index_price',
-                    [
-                        $this->dimensionFactory->create(
-                            CustomerGroupDimensionProvider::DIMENSION_NAME,
-                            (string)$filters['customer_group_id']
-                        ),
-                        $this->dimensionFactory->create(
-                            WebsiteDimensionProvider::DIMENSION_NAME,
-                            (string)$filters['website_id']
-                        )
-                    ]
-                )
+                'price_index' => $this->priceTableResolver->resolve('catalog_product_index_price', [
+                    $this->dimensionFactory->create(
+                        CustomerGroupDimensionProvider::DIMENSION_NAME,
+                        (string) $filters['customer_group_id']
+                    ),
+                    $this->dimensionFactory->create(
+                        WebsiteDimensionProvider::DIMENSION_NAME,
+                        (string) $filters['website_id']
+                    ),
+                ]),
             ];
 
             if ($joinLeft) {

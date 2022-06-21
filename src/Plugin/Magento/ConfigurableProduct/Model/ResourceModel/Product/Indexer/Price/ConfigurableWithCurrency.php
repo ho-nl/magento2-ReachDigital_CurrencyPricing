@@ -16,6 +16,7 @@ use Magento\Store\Model\ScopeInterface;
 use Magento\Framework\App\ObjectManager;
 use Magento\CatalogInventory\Model\Stock;
 use Magento\CatalogInventory\Model\Configuration;
+use Magento\Store\Model\StoreManagerInterface;
 use ReachDigital\CurrencyPricing\Model\RealBaseCurrency\RealBaseCurrency;
 use ReachDigital\CurrencyPricing\Model\ResourceModel\Product\Indexer\Price\Query\BaseFinalPriceWithCurrency;
 use Magento\Directory\Model\Currency;
@@ -83,6 +84,11 @@ class ConfigurableWithCurrency
     private $realBaseCurrency;
 
     /**
+     * @var StoreManagerInterface
+     */
+    private $storeManager;
+
+    /**
      * @param BaseFinalPriceWithCurrency $baseFinalPriceWithCurrency
      * @param IndexTableStructureFactory $indexTableStructureFactory
      * @param TableMaintainer $tableMaintainer
@@ -102,6 +108,7 @@ class ConfigurableWithCurrency
         BasePriceModifier $basePriceModifier,
         Currency $currencyModel,
         RealBaseCurrency $realBaseCurrency,
+        StoreManagerInterface $storeManager,
         $fullReindexAction = false,
         $connectionName = 'indexer',
         ScopeConfigInterface $scopeConfig = null
@@ -117,10 +124,15 @@ class ConfigurableWithCurrency
         $this->scopeConfig = $scopeConfig ?: ObjectManager::getInstance()->get(ScopeConfigInterface::class);
         $this->currencyModel = $currencyModel;
         $this->realBaseCurrency = $realBaseCurrency;
+        $this->storeManager = $storeManager;
     }
 
-    public function aroundExecuteByDimensions(Configurable $configurable, \Closure $proceed, array $dimensions, \Traversable $entityIds)
-    {
+    public function aroundExecuteByDimensions(
+        Configurable $configurable,
+        \Closure $proceed,
+        array $dimensions,
+        \Traversable $entityIds
+    ) {
         $this->tableMaintainer->createMainTmpTable($dimensions);
 
         $temporaryPriceTable = $this->indexTableStructureFactory->create([
@@ -135,21 +147,47 @@ class ConfigurableWithCurrency
             'maxPriceField' => 'max_price',
             'tierPriceField' => 'tier_price',
             'currencyField' => 'currency',
+            'storeviewIdField' => 'storeview_id',
         ]);
-        $currencies = $this->currencyModel->getConfigAllowCurrencies();
-        $baseCurrency = $this->realBaseCurrency->getRealBaseCurrencyCode();
 
-        foreach ($currencies as $currency) {
-            $this->updatePriceIndexerForCurrency($dimensions, $entityIds, $temporaryPriceTable, $currency, $currency === $baseCurrency);
+        foreach ($this->storeManager->getStores() as $store) {
+            $currencies = $this->currencyModel->getConfigAllowCurrencies();
+            $baseCurrency = $this->realBaseCurrency->getRealBaseCurrencyCode();
+            foreach ($currencies as $currency) {
+                $this->updatePriceIndexerForCurrency(
+                    $dimensions,
+                    $entityIds,
+                    $temporaryPriceTable,
+                    $currency,
+                    $currency === $baseCurrency,
+                    $store->getWebsiteId(),
+                    $store->getId()
+                );
+            }
         }
 
         $this->basePriceModifier->modifyPrice($temporaryPriceTable, iterator_to_array($entityIds));
         $this->applyConfigurableOption($temporaryPriceTable, $dimensions, iterator_to_array($entityIds));
     }
 
-    private function updatePriceIndexerForCurrency(array $dimensions, \Traversable $entityIds, IndexTableStructure $temporaryPriceTable, string $currency, bool $isBaseCurrency): void
-    {
-        $select = $this->baseFinalPriceWithCurrency->getQuery($dimensions, \Magento\ConfigurableProduct\Model\Product\Type\Configurable::TYPE_CODE, $currency, $isBaseCurrency, iterator_to_array($entityIds));
+    private function updatePriceIndexerForCurrency(
+        array $dimensions,
+        \Traversable $entityIds,
+        IndexTableStructure $temporaryPriceTable,
+        string $currency,
+        bool $isBaseCurrency,
+        $websiteId,
+        $storeviewId
+    ): void {
+        $select = $this->baseFinalPriceWithCurrency->getQuery(
+            $dimensions,
+            \Magento\ConfigurableProduct\Model\Product\Type\Configurable::TYPE_CODE,
+            $currency,
+            $isBaseCurrency,
+            $websiteId,
+            $storeviewId,
+            iterator_to_array($entityIds)
+        );
         $query = $select->insertFromSelect($temporaryPriceTable->getTableName(), [], false);
         $this->tableMaintainer->getConnection()->query($query);
     }
@@ -199,41 +237,28 @@ class ConfigurableWithCurrency
         $metadata = $this->metadataPool->getMetadata(\Magento\Catalog\Api\Data\ProductInterface::class);
         $linkField = $metadata->getLinkField();
 
-        $select = $this->getConnection()->select()->from(
-            ['i' => $this->getMainTable($dimensions)],
-            []
-        )->join(
-            ['l' => $this->getTable('catalog_product_super_link')],
-            'l.product_id = i.entity_id',
-            []
-        )->join(
-            ['le' => $this->getTable('catalog_product_entity')],
-            'le.' . $linkField . ' = l.parent_id',
-            []
-        );
+        $select = $this->getConnection()
+            ->select()
+            ->from(['i' => $this->getMainTable($dimensions)], [])
+            ->join(['l' => $this->getTable('catalog_product_super_link')], 'l.product_id = i.entity_id', [])
+            ->join(['le' => $this->getTable('catalog_product_entity')], 'le.' . $linkField . ' = l.parent_id', []);
 
         // Does not make sense to extend query if out of stock products won't appear in tables for indexing
         if ($this->isConfigShowOutOfStock()) {
-            $select->join(
-                ['si' => $this->getTable('cataloginventory_stock_item')],
-                'si.product_id = l.product_id',
-                []
-            );
+            $select->join(['si' => $this->getTable('cataloginventory_stock_item')], 'si.product_id = l.product_id', []);
             $select->where('si.is_in_stock = ?', Stock::STOCK_IN_STOCK);
         }
 
-        $select->columns(
-            [
+        $select
+            ->columns([
                 'le.entity_id',
                 'customer_group_id',
                 'website_id',
                 'MIN(final_price)',
                 'MAX(final_price)',
                 'MIN(tier_price)',
-            ]
-        )->group(
-            ['le.entity_id', 'customer_group_id', 'website_id']
-        );
+            ])
+            ->group(['le.entity_id', 'customer_group_id', 'website_id']);
         if ($entityIds !== null) {
             $select->where('le.entity_id IN (?)', $entityIds);
         }
@@ -252,20 +277,20 @@ class ConfigurableWithCurrency
     private function updateTemporaryTable(string $temporaryPriceTableName, string $temporaryOptionsTableName)
     {
         $table = ['i' => $temporaryPriceTableName];
-        $selectForCrossUpdate = $this->getConnection()->select()->join(
-            ['io' => $temporaryOptionsTableName],
-            'i.entity_id = io.entity_id AND i.customer_group_id = io.customer_group_id' .
-            ' AND i.website_id = io.website_id',
-            []
-        );
+        $selectForCrossUpdate = $this->getConnection()
+            ->select()
+            ->join(
+                ['io' => $temporaryOptionsTableName],
+                'i.entity_id = io.entity_id AND i.customer_group_id = io.customer_group_id' .
+                    ' AND i.website_id = io.website_id',
+                []
+            );
         // adds price of custom option, that was applied in DefaultPrice::_applyCustomOption
-        $selectForCrossUpdate->columns(
-            [
-                'min_price' => new \Zend_Db_Expr('i.min_price - i.price + io.min_price'),
-                'max_price' => new \Zend_Db_Expr('i.max_price - i.price + io.max_price'),
-                'tier_price' => 'io.tier_price',
-            ]
-        );
+        $selectForCrossUpdate->columns([
+            'min_price' => new \Zend_Db_Expr('i.min_price - i.price + io.min_price'),
+            'max_price' => new \Zend_Db_Expr('i.max_price - i.price + io.max_price'),
+            'tier_price' => 'io.tier_price',
+        ]);
 
         $query = $selectForCrossUpdate->crossUpdateFromSelect($table);
         $this->getConnection()->query($query);
@@ -318,9 +343,6 @@ class ConfigurableWithCurrency
      */
     private function isConfigShowOutOfStock(): bool
     {
-        return $this->scopeConfig->isSetFlag(
-            Configuration::XML_PATH_SHOW_OUT_OF_STOCK,
-            ScopeInterface::SCOPE_STORE
-        );
+        return $this->scopeConfig->isSetFlag(Configuration::XML_PATH_SHOW_OUT_OF_STOCK, ScopeInterface::SCOPE_STORE);
     }
 }
