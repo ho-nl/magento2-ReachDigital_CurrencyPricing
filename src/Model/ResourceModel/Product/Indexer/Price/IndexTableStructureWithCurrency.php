@@ -7,11 +7,15 @@ use Magento\Catalog\Model\ResourceModel\Product\Indexer\Price\IndexTableStructur
 
 class IndexTableStructureWithCurrency extends IndexTableStructure
 {
-
     /**
      * @var string
      */
     private $currencyField;
+
+    /**
+     * @var string
+     */
+    private $storeviewIdField;
 
     public function __construct(
         string $tableName,
@@ -24,11 +28,23 @@ class IndexTableStructureWithCurrency extends IndexTableStructure
         string $minPriceField,
         string $maxPriceField,
         string $tierPriceField,
-        string $currencyField
+        string $currencyField,
+        string $storeviewIdField
     ) {
-        parent::__construct($tableName, $entityField, $customerGroupField, $websiteField, $taxClassField,
-            $originalPriceField, $finalPriceField, $minPriceField, $maxPriceField, $tierPriceField);
+        parent::__construct(
+            $tableName,
+            $entityField,
+            $customerGroupField,
+            $websiteField,
+            $taxClassField,
+            $originalPriceField,
+            $finalPriceField,
+            $minPriceField,
+            $maxPriceField,
+            $tierPriceField
+        );
         $this->currencyField = $currencyField;
+        $this->storeviewIdField = $storeviewIdField;
     }
 
     /**
@@ -37,5 +53,13 @@ class IndexTableStructureWithCurrency extends IndexTableStructure
     public function getCurrencyField(): string
     {
         return $this->currencyField;
+    }
+
+    /**
+     * @return string
+     */
+    public function getStoreviewIdField(): string
+    {
+        return $this->storeviewIdField;
     }
 }

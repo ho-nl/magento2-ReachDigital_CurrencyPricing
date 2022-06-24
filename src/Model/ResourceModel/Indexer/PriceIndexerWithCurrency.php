@@ -23,7 +23,6 @@ use ReachDigital\CurrencyPricing\Model\RealBaseCurrency\RealBaseCurrency;
 
 class PriceIndexerWithCurrency extends Price
 {
-
     /**
      * @var IndexTableStructureFactory
      */
@@ -100,8 +99,16 @@ class PriceIndexerWithCurrency extends Price
         BaseFinalPriceWithCurrency $baseFinalPriceWithCurrency,
         string $connectionName = 'indexer'
     ) {
-        parent::__construct($baseFinalPrice, $indexTableStructureFactory, $tableMaintainer, $metadataPool, $eavConfig,
-            $resource, $basePriceModifier, $connectionName);
+        parent::__construct(
+            $baseFinalPrice,
+            $indexTableStructureFactory,
+            $tableMaintainer,
+            $metadataPool,
+            $eavConfig,
+            $resource,
+            $basePriceModifier,
+            $connectionName
+        );
         $this->indexTableStructureFactory = $indexTableStructureFactory;
         $this->tableMaintainer = $tableMaintainer;
         $this->resource = $resource;
@@ -133,6 +140,7 @@ class PriceIndexerWithCurrency extends Price
             'maxPriceField' => 'max_price',
             'tierPriceField' => 'tier_price',
             'currencyField' => 'currency',
+            'storeviewIdField' => 'storeview_id',
         ]);
         $this->fillFinalPrice($dimensions, $entityIds, $temporaryPriceTable);
         $this->basePriceModifier->modifyPrice($temporaryPriceTable, iterator_to_array($entityIds));
@@ -157,18 +165,33 @@ class PriceIndexerWithCurrency extends Price
         $baseCurrency = $this->realBaseCurrency->getRealBaseCurrencyCode();
 
         foreach ($currencies as $currency) {
-            $this->updatePriceIndexerForCurrency($dimensions, $entityIds, $temporaryPriceTable, $currency, $currency === $baseCurrency);
+            $this->updatePriceIndexerForCurrency(
+                $dimensions,
+                $entityIds,
+                $temporaryPriceTable,
+                $currency,
+                $currency === $baseCurrency
+            );
         }
-
     }
 
-    private function updatePriceIndexerForCurrency(array $dimensions, \Traversable $entityIds, IndexTableStructure $temporaryPriceTable, string $currency, bool $isBaseCurrency): void
-    {
-        $select = $this->baseFinalPriceWithCurrency->getQuery($dimensions, Type::TYPE_DOWNLOADABLE, $currency, $isBaseCurrency, iterator_to_array($entityIds));
+    private function updatePriceIndexerForCurrency(
+        array $dimensions,
+        \Traversable $entityIds,
+        IndexTableStructure $temporaryPriceTable,
+        string $currency,
+        bool $isBaseCurrency
+    ): void {
+        $select = $this->baseFinalPriceWithCurrency->getQuery(
+            $dimensions,
+            Type::TYPE_DOWNLOADABLE,
+            $currency,
+            $isBaseCurrency,
+            iterator_to_array($entityIds)
+        );
         $query = $select->insertFromSelect($temporaryPriceTable->getTableName(), [], false);
         $this->tableMaintainer->getConnection()->query($query);
     }
-
 
     /*
      * ---------------------------------------------
@@ -184,10 +207,8 @@ class PriceIndexerWithCurrency extends Price
      * @return $this
      * @throws \Exception
      */
-    private function applyDownloadableLink(
-        IndexTableStructure $temporaryPriceTable,
-        array $dimensions
-    ) {
+    private function applyDownloadableLink(IndexTableStructure $temporaryPriceTable, array $dimensions)
+    {
         $temporaryDownloadableTableName = 'catalog_product_index_price_downlod_temp';
         $this->getConnection()->createTemporaryTableLike(
             $temporaryDownloadableTableName,
@@ -215,36 +236,35 @@ class PriceIndexerWithCurrency extends Price
         $metadata = $this->metadataPool->getMetadata(ProductInterface::class);
         $linkField = $metadata->getLinkField();
 
-        $select = $this->getConnection()->select()->from(
-            ['i' => $this->tableMaintainer->getMainTmpTable($dimensions)],
-            ['entity_id', 'customer_group_id', 'website_id']
-        )->join(
-            ['dl' => $dlType->getBackend()->getTable()],
-            "dl.{$linkField} = i.entity_id AND dl.attribute_id = {$dlType->getAttributeId()}" . " AND dl.store_id = 0",
-            []
-        )->join(
-            ['dll' => $this->getTable('downloadable_link')],
-            'dll.product_id = i.entity_id',
-            []
-        )->join(
-            ['dlpd' => $this->getTable('downloadable_link_price')],
-            'dll.link_id = dlpd.link_id AND dlpd.website_id = 0',
-            []
-        )->joinLeft(
-            ['dlpw' => $this->getTable('downloadable_link_price')],
-            'dlpd.link_id = dlpw.link_id AND dlpw.website_id = i.website_id',
-            []
-        )->where(
-            'dl.value = ?',
-            1
-        )->group(
-            ['i.entity_id', 'i.customer_group_id', 'i.website_id']
-        )->columns(
-            [
+        $select = $this->getConnection()
+            ->select()
+            ->from(
+                ['i' => $this->tableMaintainer->getMainTmpTable($dimensions)],
+                ['entity_id', 'customer_group_id', 'website_id']
+            )
+            ->join(
+                ['dl' => $dlType->getBackend()->getTable()],
+                "dl.{$linkField} = i.entity_id AND dl.attribute_id = {$dlType->getAttributeId()}" .
+                    ' AND dl.store_id = 0',
+                []
+            )
+            ->join(['dll' => $this->getTable('downloadable_link')], 'dll.product_id = i.entity_id', [])
+            ->join(
+                ['dlpd' => $this->getTable('downloadable_link_price')],
+                'dll.link_id = dlpd.link_id AND dlpd.website_id = 0',
+                []
+            )
+            ->joinLeft(
+                ['dlpw' => $this->getTable('downloadable_link_price')],
+                'dlpd.link_id = dlpw.link_id AND dlpw.website_id = i.website_id',
+                []
+            )
+            ->where('dl.value = ?', 1)
+            ->group(['i.entity_id', 'i.customer_group_id', 'i.website_id'])
+            ->columns([
                 'min_price' => new \Zend_Db_Expr('MIN(' . $ifPrice . ')'),
                 'max_price' => new \Zend_Db_Expr('SUM(' . $ifPrice . ')'),
-            ]
-        );
+            ]);
         $query = $select->insertFromSelect($temporaryDownloadableTableName);
         $this->getConnection()->query($query);
     }
@@ -266,20 +286,20 @@ class PriceIndexerWithCurrency extends Price
             'NULL'
         );
 
-        $selectForCrossUpdate = $this->getConnection()->select()->join(
-            ['id' => $temporaryDownloadableTableName],
-            'i.entity_id = id.entity_id AND i.customer_group_id = id.customer_group_id' .
-            ' AND i.website_id = id.website_id',
-            []
-        );
+        $selectForCrossUpdate = $this->getConnection()
+            ->select()
+            ->join(
+                ['id' => $temporaryDownloadableTableName],
+                'i.entity_id = id.entity_id AND i.customer_group_id = id.customer_group_id' .
+                    ' AND i.website_id = id.website_id',
+                []
+            );
         // adds price of custom option, that was applied in DefaultPrice::_applyCustomOption
-        $selectForCrossUpdate->columns(
-            [
-                'min_price' => new \Zend_Db_Expr('i.min_price + id.min_price'),
-                'max_price' => new \Zend_Db_Expr('i.max_price + id.max_price'),
-                'tier_price' => new \Zend_Db_Expr($ifTierPrice),
-            ]
-        );
+        $selectForCrossUpdate->columns([
+            'min_price' => new \Zend_Db_Expr('i.min_price + id.min_price'),
+            'max_price' => new \Zend_Db_Expr('i.max_price + id.max_price'),
+            'tier_price' => new \Zend_Db_Expr($ifTierPrice),
+        ]);
         $query = $selectForCrossUpdate->crossUpdateFromSelect(['i' => $temporaryPriceTableName]);
         $this->getConnection()->query($query);
     }

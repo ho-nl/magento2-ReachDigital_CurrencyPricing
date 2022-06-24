@@ -3,9 +3,22 @@
 namespace ReachDigital\CurrencyPricing\Model\ResourceModel;
 
 use Magento\Framework\DataObject;
+use Magento\Framework\Model\ResourceModel\Db\Context;
+use Magento\Store\Model\StoreManagerInterface;
 
 class CurrencyPrice extends \Magento\Framework\Model\ResourceModel\Db\AbstractDb
 {
+    /**
+     * @var StoreManagerInterface
+     */
+    private $storeManager;
+
+    public function __construct(Context $context, StoreManagerInterface $storeManager, $connectionName = null)
+    {
+        parent::__construct($context, $connectionName);
+        $this->storeManager = $storeManager;
+    }
+
     /**
      * Initialize connection and define main table
      *
@@ -17,16 +30,46 @@ class CurrencyPrice extends \Magento\Framework\Model\ResourceModel\Db\AbstractDb
     }
 
     /**
-     * Load Tier Prices for product
+     * Load currency Prices for product
      *
      * @param int $productId
      * @return array
      */
-    public function loadPriceData($productId, $type): array
+    public function loadPriceDataForDisplay($productId, $type): array
+    {
+        $currentStore = $this->storeManager->getStore();
+        $storePriceData = $this->loadPriceData($productId, $type, $currentStore->getId());
+        $result = [];
+        $storeSpecificCurrencies = [];
+        foreach ($storePriceData as $priceData) {
+            $result[] = $priceData;
+            $storeSpecificCurrencies[$priceData['currency']] = true;
+        }
+        $defaultPriceData = $this->loadPriceData($productId, $type, null);
+        foreach ($defaultPriceData as $priceData) {
+            if (!isset($storeSpecificCurrencies[$priceData['currency']])) {
+                $result[] = $priceData;
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Load currency Prices for product
+     *
+     * @param int $productId
+     * @return array
+     */
+    public function loadPriceData($productId, $type, $storeId): array
     {
         $select = $this->getSelect();
         $select->where('entity_id = ?', $productId);
         $select->where('type = ?', $type);
+        if ($storeId === null) {
+            $select->where('storeview_id IS NULL');
+        } else {
+            $select->where('storeview_id = ?', $storeId);
+        }
 
         return $this->getConnection()->fetchAll($select);
     }
@@ -42,9 +85,11 @@ class CurrencyPrice extends \Magento\Framework\Model\ResourceModel\Db\AbstractDb
             'price' => 'price',
             'type' => 'type',
             'entity_id' => 'entity_id',
+            'storeview_id' => 'storeview_id',
         ];
 
-        $select = $this->getConnection()->select()
+        $select = $this->getConnection()
+            ->select()
             ->from($this->getMainTable(), $columns);
 
         return $select;

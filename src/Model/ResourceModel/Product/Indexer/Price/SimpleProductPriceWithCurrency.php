@@ -9,6 +9,7 @@ use Magento\Catalog\Model\ResourceModel\Product\Indexer\Price\IndexTableStructur
 use Magento\Catalog\Model\ResourceModel\Product\Indexer\Price\IndexTableStructure;
 use Magento\Catalog\Model\ResourceModel\Product\Indexer\Price\Query\BaseFinalPrice;
 use Magento\Catalog\Model\ResourceModel\Product\Indexer\Price\SimpleProductPrice;
+use Magento\Store\Model\StoreManagerInterface;
 use ReachDigital\CurrencyPricing\Model\RealBaseCurrency\RealBaseCurrency;
 use ReachDigital\CurrencyPricing\Model\ResourceModel\Product\Indexer\Price\Query\BaseFinalPriceWithCurrency;
 use Magento\Directory\Model\Currency;
@@ -47,6 +48,11 @@ class SimpleProductPriceWithCurrency extends SimpleProductPrice
      */
     private $indexTableStructureFactory;
 
+    /**
+     * @var StoreManagerInterface
+     */
+    private $storeManager;
+
     public function __construct(
         BaseFinalPrice $baseFinalPrice,
         IndexTableStructureFactory $indexTableStructureFactory,
@@ -55,10 +61,16 @@ class SimpleProductPriceWithCurrency extends SimpleProductPrice
         BaseFinalPriceWithCurrency $baseFinalPriceWithCurrency,
         Currency $currencyModel,
         RealBaseCurrency $realBaseCurrency,
+        StoreManagerInterface $storeManager,
         string $productType = \Magento\Catalog\Model\Product\Type::TYPE_SIMPLE
     ) {
-        parent::__construct($baseFinalPrice, $indexTableStructureFactory, $tableMaintainer, $basePriceModifier,
-            $productType);
+        parent::__construct(
+            $baseFinalPrice,
+            $indexTableStructureFactory,
+            $tableMaintainer,
+            $basePriceModifier,
+            $productType
+        );
         $this->productType = $productType;
         $this->tableMaintainer = $tableMaintainer;
         $this->baseFinalPriceWithCurrency = $baseFinalPriceWithCurrency;
@@ -66,13 +78,14 @@ class SimpleProductPriceWithCurrency extends SimpleProductPrice
         $this->realBaseCurrency = $realBaseCurrency;
         $this->basePriceModifier = $basePriceModifier;
         $this->indexTableStructureFactory = $indexTableStructureFactory;
+        $this->storeManager = $storeManager;
     }
 
     /**
      * @param array        $dimensions
      * @param \Traversable $entityIds
      */
-    public function executeByDimensions(array $dimensions, \Traversable $entityIds) :void
+    public function executeByDimensions(array $dimensions, \Traversable $entityIds): void
     {
         $this->tableMaintainer->createMainTmpTable($dimensions);
 
@@ -88,20 +101,45 @@ class SimpleProductPriceWithCurrency extends SimpleProductPrice
             'maxPriceField' => 'max_price',
             'tierPriceField' => 'tier_price',
             'currencyField' => 'currency',
+            'storeviewIdField' => 'storeview_id',
         ]);
-        $currencies = $this->currencyModel->getConfigAllowCurrencies();
-        $baseCurrency = $this->realBaseCurrency->getRealBaseCurrencyCode();
 
-        foreach ($currencies as $currency) {
-            $this->updatePriceIndexerForCurrency($dimensions, $entityIds, $temporaryPriceTable, $currency, $currency === $baseCurrency);
+        foreach ($this->storeManager->getStores() as $store) {
+            $currencies = $this->currencyModel->getConfigAllowCurrencies();
+            $baseCurrency = $this->realBaseCurrency->getRealBaseCurrencyCode();
+            foreach ($currencies as $currency) {
+                $this->updatePriceIndexerForCurrency(
+                    $dimensions,
+                    $entityIds,
+                    $temporaryPriceTable,
+                    $currency,
+                    $currency === $baseCurrency,
+                    $store->getWebsiteId(),
+                    $store->getId()
+                );
+            }
+            $this->basePriceModifier->modifyPrice($temporaryPriceTable, iterator_to_array($entityIds));
         }
-
-        $this->basePriceModifier->modifyPrice($temporaryPriceTable, iterator_to_array($entityIds));
     }
 
-    private function updatePriceIndexerForCurrency(array $dimensions, \Traversable $entityIds, IndexTableStructure $temporaryPriceTable, string $currency, bool $isBaseCurrency): void
-    {
-        $select = $this->baseFinalPriceWithCurrency->getQuery($dimensions, $this->productType, $currency, $isBaseCurrency, iterator_to_array($entityIds));
+    private function updatePriceIndexerForCurrency(
+        array $dimensions,
+        \Traversable $entityIds,
+        IndexTableStructure $temporaryPriceTable,
+        string $currency,
+        bool $isBaseCurrency,
+        $websiteId,
+        $storeviewId
+    ): void {
+        $select = $this->baseFinalPriceWithCurrency->getQuery(
+            $dimensions,
+            $this->productType,
+            $currency,
+            $isBaseCurrency,
+            $websiteId,
+            $storeviewId,
+            iterator_to_array($entityIds)
+        );
         $query = $select->insertFromSelect($temporaryPriceTable->getTableName(), [], false);
         $this->tableMaintainer->getConnection()->query($query);
     }
