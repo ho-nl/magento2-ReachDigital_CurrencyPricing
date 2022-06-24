@@ -243,6 +243,7 @@ class AdvancedPricingCurrency extends AbstractModifier
         $storeviewId = (int) $currentStore->getId() === 0 ? null : $currentStore->getId();
         $productId = $this->locator->getProduct()->getId();
 
+        $currencyPriceData = [];
         $currencyPriceObjects = $this->currencyPriceResourceModel->loadPriceData($productId, 'price', $storeviewId);
         foreach ($currencyPriceObjects as $currencyPriceObject) {
             $currencyPriceData[$currencyPriceObject['currency']] =
