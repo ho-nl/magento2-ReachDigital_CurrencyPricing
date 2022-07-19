@@ -13,7 +13,6 @@
     <preference for="Magento\Catalog\Model\ResourceModel\Product\Indexer\Price\IndexTableStructure" type="ReachDigital\CurrencyPricing\Model\ResourceModel\Product\Indexer\Price\IndexTableStructureWithCurrency"/>
     <preference for="Magento\Catalog\Pricing\Price\TierPrice" type="ReachDigital\CurrencyPricing\Pricing\Price\TierPriceWithCurrency"/>
     <preference for="Magento\Catalog\Pricing\Price\SpecialPrice" type="ReachDigital\CurrencyPricing\Pricing\Price\SpecialPriceWithCurrency"/>
-    <preference for="Magento\Catalog\Model\ResourceModel\Product\Collection" type="ReachDigital\CurrencyPricing\Model\ResourceModel\Product\CollectionWithCurrency"/>
     <preference for="Magento\Catalog\Model\ResourceModel\Product\Indexer\Price\SimpleProductPrice" type="ReachDigital\CurrencyPricing\Model\ResourceModel\Product\Indexer\Price\SimpleProductPriceWithCurrency"/>
     <type name="Magento\Store\Model\Store">
         <plugin name="ReplaceBaseCurrencyWithCurrenctCurrency" type="ReachDigital\CurrencyPricing\Plugin\MagentoStoreModel\ReplaceBaseCurrencyWithCurrentCurrency" sortOrder="1" />

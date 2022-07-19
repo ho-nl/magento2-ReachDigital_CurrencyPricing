@@ -1,0 +1,9 @@
+<!--
+  ~ Copyright © Reach Digital (https://www.reachdigital.io/)
+  ~ See LICENSE.txt for license details.
+  -->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
+    <event name="catalog_product_collection_apply_limitations_after">
+        <observer name="rd_after_apply_limitations_after" instance="ReachDigital\CurrencyPricing\Observer\ApplyLimitationsAfter" />
+    </event>
+</config>
