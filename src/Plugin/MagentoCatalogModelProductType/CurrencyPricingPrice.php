@@ -229,7 +229,10 @@ class CurrencyPricingPrice
         float $currencyRate
     ): float {
         $currenctCurrencyCode = $this->store->getCurrentCurrencyCode();
-        $specialPrice = (float) $product->getSpecialPrice();
+        $specialPrice = $product->getSpecialPrice();
+        if ($specialPrice === null) {
+            $specialPrice = (float) $product->getData('price');
+        }
 
         $currencyPriceObjects = $this->currencyPriceResourceModel->loadPriceDataForDisplay(
             $product->getId(),
