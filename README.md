@@ -15,6 +15,10 @@ This is what the currency prices look like for the base price:
 In the Advanced pricing popup you can specify currency prices for the special price and the tier prices:
 ![Currency prices for special prices and tier prices](CurrencyForTierprices.png)
 
+### Per storeview prices
+The module also adds the possiblity to set prices for products per storeview.
+This allows for more fine grained control compared to standard Magento, which only allows different prices to be set at Website level.
+
 ### Installation
 Run `composer require reach-digital/magento2-currencypricing` to install the module.
 
@@ -29,5 +33,3 @@ For other product types, the price indexer does not work correctly, so wrong pri
 This module conflicts with the [Amasty_Shopby](https://amasty.com/shop-by-brand-for-magento-2.html) module, causing an error on the catalog page.
 To resolve this conflict, also install [this module](https://github.com/ho-nl/magento2-ReachDigital-CurrencyPricing-fix-Amasty_Shpoby) using `composer require reach-digital/magento2-currencypricing-fix-amasty-shopby`.
 
-## FEATURE REQUESTS
-- Allow to configure currency price per store view?
